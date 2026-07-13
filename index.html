@@ -53,15 +53,15 @@ const VERJAARDAGEN = [
 ];
 
 /* ============================================================
-   5. BEWERK HIER — BEDRIJFSMEDEDELINGEN
+   4. BEWERK HIER — BEDRIJFSMEDEDELINGEN
    De 3 nieuwste (op datum) worden getoond.
    ============================================================ */
 const MEDEDELINGEN = [
-  { tekst: "IDEEËN GRAAG! Nathan & Enrique", datum: "2026-07-01" },
+  { tekst: "IDEEËN HEEL GRAAG :)) -> Nathan & Enrique", datum: "2026-07-01" },
 ];
 
 /* ============================================================
-   6. BEWERK HIER — BEURSKOERSEN (rotatiepagina)
+   5. BEWERK HIER — BEURSKOERSEN (rotatiepagina)
    Maak een gratis account op https://twelvedata.com, kopieer
    je API-sleutel en plak die hieronder tussen de aanhalingstekens.
    Zonder geldige sleutel toont het dashboard gewoon een melding
@@ -70,7 +70,7 @@ const MEDEDELINGEN = [
    Let op: BEL20 en olie zelf zitten op Twelve Data achter een
    betaald plan. Als proxy gebruiken we hier Amerikaans-genoteerde
    ETF's die hetzelfde volgen en wél op het gratis plan werken:
-   EWK (volgt Belgische aandelen) en USO (volgt de olieprijs).
+   EWK (volgt Belgische aandelen) en XLE (energiesector/olie).
    ============================================================ */
 const BEURS_API_KEY = "4d1c8fc6d761419981a53e5e9c5112b6";
 const BEURS_SYMBOLEN = [
@@ -79,6 +79,45 @@ const BEURS_SYMBOLEN = [
   { naam: "Nasdaq (QQQ)",    symbool: "QQQ" },
   { naam: "BEL20 (EWK)",     symbool: "EWK" },
   { naam: "Olie & Energie (XLE)", symbool: "XLE" },
+];
+
+/* ============================================================
+   6. BEWERK HIER — VERLOF (aparte rotatiepagina)
+   Naam, van, tot (JJJJ-MM-DD, einddag inbegrepen) en soort.
+   De pagina toont automatisch enkel verlof dat binnen de
+   komende 3 maanden valt (incl. lopend verlof); oudere regels
+   mogen blijven staan, die worden gewoon niet meer getoond.
+   Kopieer nieuwe regels uit Odoo in hetzelfde formaat.
+   ============================================================ */
+const VERLOF = [
+  { naam: "Glenn De Cleen", van: "2026-10-05", tot: "2026-10-05", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Els Michiels", van: "2026-09-15", tot: "2026-09-30", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Els Michiels", van: "2026-09-14", tot: "2026-09-14", soort: "[VBF] Vervangingsdag feestdag" },
+  { naam: "Patrick Vandevenne", van: "2026-08-24", tot: "2026-09-11", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
+  { naam: "Glenn De Cleen", van: "2026-08-18", tot: "2026-08-21", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Mohamed El Koubai", van: "2026-08-18", tot: "2026-08-21", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Mohamed El Koubai", van: "2026-08-17", tot: "2026-08-17", soort: "[BF] Betaalde feestdag" },
+  { naam: "Glenn De Cleen", van: "2026-08-17", tot: "2026-08-17", soort: "[BF] Betaalde feestdag" },
+  { naam: "Mohamed El Koubai", van: "2026-08-10", tot: "2026-08-14", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Samir Ghadari", van: "2026-08-03", tot: "2026-08-03", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Abdelkader Liaoui", van: "2026-07-30", tot: "2026-07-31", soort: "[OnAF] Onbetaalde afwezigheid" },
+  { naam: "Ali Sharif", van: "2026-07-27", tot: "2026-08-07", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
+  { naam: "Ali Abbas", van: "2026-07-27", tot: "2026-07-31", soort: "[OnAF] Onbetaalde afwezigheid" },
+  { naam: "Ali Abbas", van: "2026-07-22", tot: "2026-07-24", soort: "[OnAF] Onbetaalde afwezigheid" },
+  { naam: "Nathan Lefeber", van: "2026-07-22", tot: "2026-07-22", soort: "[RECB] Betaalde recuperatie overuren" },
+  { naam: "Glenn De Cleen", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Eddy Snauwaert", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Els Michiels", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Nathan Lefeber", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Chris Severeyns", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Tom Van den Bergh", van: "2026-07-13", tot: "2026-08-02", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
+  { naam: "Ali Abbas", van: "2026-07-13", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Robert Garcia", van: "2026-07-13", tot: "2026-07-24", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Abdelkader Liaoui", van: "2026-07-13", tot: "2026-07-29", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Samir Ghadari", van: "2026-07-09", tot: "2026-07-10", soort: "[Z] Ziekte" },
+  { naam: "Jaafar Al-Rifaie", van: "2026-07-03", tot: "2026-07-09", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+  { naam: "Tim Reyntjens", van: "2026-07-03", tot: "2026-07-20", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
+  { naam: "Karl Creemers", van: "2026-06-29", tot: "2026-07-17", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
 ];
 
 /* ============================================================
@@ -120,6 +159,19 @@ function dagtipVanVandaag(){
     --brown:#7e5e4f;
     --shadow: 0 1px 2px rgba(62,61,68,0.05), 0 6px 20px rgba(62,61,68,0.06);
   }
+
+  /* Nachtmodus: schakelt automatisch in tussen 19u en 7u,
+     rustiger voor de ogen op een donker kantoor. */
+  body.nacht{
+    --bg:#22242b;
+    --card:#2c2f37;
+    --card-border: rgba(234,228,216,0.10);
+    --ink:#eae4d8;
+    --ink-soft:#9aa3ae;
+    --shadow: 0 1px 2px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.30);
+  }
+  body.nacht .brand img{ background:#fff; padding:5px 10px; border-radius:10px; }
+  body.nacht .mededelingen-label{ background:#5d463a; }
 
   *{ box-sizing:border-box; margin:0; padding:0; }
   html,body{ width:100%; height:100%; background:var(--bg); overflow:hidden; font-family:'Inter',sans-serif; color:var(--ink); }
@@ -179,7 +231,7 @@ function dagtipVanVandaag(){
     flex:1; display:flex; align-items:center; gap:28px;
     padding:14px 22px; overflow:hidden;
   }
-  .mededeling-item{ display:flex; align-items:baseline; gap:9px; font-size:14px; white-space:nowrap; }
+  .mededeling-item{ display:flex; align-items:baseline; gap:9px; font-size:16px; white-space:nowrap; }
   .mededeling-item .tekst{ font-weight:500; color:var(--ink); }
   .mededeling-item .datum{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); }
   .mededeling-sep{ color:var(--card-border); }
@@ -201,7 +253,7 @@ function dagtipVanVandaag(){
     display:flex; align-items:center; justify-content:space-between;
     padding:18px 26px 12px 26px;
   }
-  .card-title{ font-family:'Manrope',sans-serif; font-weight:700; font-size:16px; }
+  .card-title{ font-family:'Manrope',sans-serif; font-weight:700; font-size:18px; }
   .card-count{
     font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--red);
     background:rgba(188,23,2,0.08); padding:3px 10px; border-radius:20px;
@@ -212,17 +264,21 @@ function dagtipVanVandaag(){
   table{ width:100%; border-collapse:collapse; }
   thead th{
     position:sticky; top:0; background:var(--card); text-align:left;
-    font-weight:600; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
     color:var(--ink-soft); padding:10px 20px 12px 20px;
     border-bottom:1px solid var(--card-border);
   }
-  tbody td{ padding:14px 20px; font-size:15px; border-bottom:1px solid var(--card-border); vertical-align:top; }
+  tbody td{ padding:16px 22px; font-size:17px; border-bottom:1px solid var(--card-border); vertical-align:top; }
   tbody tr:last-child td{ border-bottom:none; }
   td.klant{ font-weight:600; }
   td.werf{ color:var(--ink-soft); }
   td.datum, td.uur{ font-family:'IBM Plex Mono',monospace; font-size:14px; }
   td.pb{ font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; color:var(--red); }
-  tr.soon td{ background:rgba(188,23,2,0.035); }
+  tr.soon td{ background:rgba(188,23,2,0.035); animation: soonPulse 3.5s ease-in-out infinite; }
+  @keyframes soonPulse{
+    0%, 100%{ background:rgba(188,23,2,0.03); }
+    50%{ background:rgba(188,23,2,0.09); }
+  }
   tr.soon td.klant::after{
     content:"eerstvolgend"; display:block; font-weight:600; font-size:10px;
     letter-spacing:0.06em; text-transform:uppercase; color:var(--red); margin-top:4px;
@@ -233,11 +289,11 @@ function dagtipVanVandaag(){
   .weer-body{ padding:16px 26px 18px 26px; flex:1; display:flex; flex-direction:column; }
   .weer-nu{ display:flex; align-items:center; gap:16px; }
   .weer-icon{ font-size:38px; line-height:1; }
-  .weer-temp{ font-family:'Manrope',sans-serif; font-weight:800; font-size:36px; line-height:1; }
+  .weer-temp{ font-family:'Manrope',sans-serif; font-weight:800; font-size:42px; line-height:1; }
   .weer-omschrijving{ font-size:13px; color:var(--ink-soft); margin-top:4px; }
   .weer-extra{ display:flex; gap:18px; margin-top:12px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); }
   .weer-dagen{ margin-top:14px; display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--card-border); padding-top:12px; }
-  .weer-dag{ display:flex; align-items:center; justify-content:space-between; font-size:13px; }
+  .weer-dag{ display:flex; align-items:center; justify-content:space-between; font-size:14.5px; }
   .weer-dag .naam{ color:var(--ink-soft); text-transform:capitalize; width:70px; }
   .weer-dag .icoon{ font-size:16px; }
   .weer-dag .temps{ font-family:'IBM Plex Mono',monospace; }
@@ -247,8 +303,8 @@ function dagtipVanVandaag(){
   .verj-body{ flex:1; overflow:auto; padding:4px 0 8px 0; }
   .verj-item{ display:flex; align-items:center; justify-content:space-between; padding:10px 26px; border-bottom:1px solid var(--card-border); }
   .verj-item:last-child{ border-bottom:none; }
-  .verj-naam{ font-weight:600; font-size:14.5px; }
-  .verj-datum{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft); }
+  .verj-naam{ font-weight:600; font-size:16px; }
+  .verj-datum{ font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--ink-soft); }
   .verj-item.vandaag{ background:rgba(234,115,134,0.08); }
   .verj-item.vandaag .verj-naam::after{ content:" — jarig vandaag!"; color:var(--pink); font-weight:700; }
   .verj-item.vandaag .verj-datum{ color:var(--pink); font-weight:600; }
@@ -341,7 +397,8 @@ function dagtipVanVandaag(){
   }
   .rotatie-titel span{ color:var(--red); }
   .rotatie-slide{ display:none; flex-direction:column; align-items:center; }
-  .rotatie-slide.tonen{ display:flex; }
+  .rotatie-slide.tonen{ display:flex; animation: slideIn .55s ease-out; }
+  @keyframes slideIn{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
   .beurs-grid{ display:flex; gap:20px; flex-wrap:wrap; justify-content:center; max-width:1600px; }
   .beurs-kaart{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
@@ -360,7 +417,12 @@ function dagtipVanVandaag(){
   .beurs-change.up{ color:#1a8f5e; }
   .beurs-change.down{ color:var(--red); }
   .beurs-chart{ margin-top:12px; display:block; width:100%; height:auto; }
-  .beurs-chart .lijn{ fill:none; stroke-width:2.5; }
+  .beurs-chart .lijn{
+    fill:none; stroke-width:2.5;
+    stroke-dasharray:1400; stroke-dashoffset:1400;
+    animation: tekenLijn 1.6s ease-out forwards;
+  }
+  @keyframes tekenLijn{ to{ stroke-dashoffset:0; } }
   .beurs-chart .lijn.up{ stroke:#1a8f5e; }
   .beurs-chart .lijn.down{ stroke:var(--red); }
   .beurs-chart .vlak{ opacity:0.08; }
@@ -388,6 +450,53 @@ function dagtipVanVandaag(){
   .beurs-leeg{
     font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
   }
+
+  /* ---------- VERLOFPAGINA (GANTT) ---------- */
+  .verlof-legende{
+    display:flex; gap:26px; margin:-14px 0 18px 0;
+    font-size:13.5px; color:var(--ink-soft); align-items:center;
+  }
+  .leg-item{ display:flex; align-items:center; gap:8px; }
+  .leg-blok{ width:26px; height:13px; border-radius:4px; display:inline-block; }
+  .leg-blok.vak{ background:var(--teal); }
+  .leg-blok.ziek{ background:var(--red); opacity:0.75; }
+  .leg-lijn{ width:2px; height:16px; background:var(--red); display:inline-block; }
+  .gantt-wrap{
+    background:var(--card); border:1px solid var(--card-border); border-radius:20px;
+    box-shadow:var(--shadow); padding:24px 28px;
+    max-width:1500px; width:92vw; max-height:66vh; overflow:auto;
+  }
+  .gantt-svg{ display:block; width:100%; height:auto; }
+  .gantt-svg .g-maand{
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:13px;
+    fill:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em;
+  }
+  .gantt-svg .g-grid{ stroke:var(--card-border); stroke-width:1; }
+  .gantt-svg .g-grid.maand{ stroke:var(--ink-soft); stroke-opacity:0.25; }
+  .gantt-svg .g-naam{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px; fill:var(--ink);
+  }
+  .gantt-svg .g-rijlijn{ stroke:var(--card-border); stroke-width:1; }
+  .gantt-svg .g-balk{ rx:5; }
+  .gantt-svg .g-balk.vak{ fill:var(--teal); }
+  .gantt-svg .g-balk.ziek{ fill:var(--red); opacity:0.75; }
+  .gantt-svg .g-vandaag{ stroke:var(--red); stroke-width:2; stroke-dasharray:5 4; }
+  .gantt-svg .g-vandaag-label{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--red); font-weight:600;
+  }
+  .verlof-leeg{ padding:26px; font-size:15px; color:var(--ink-soft); text-align:center; }
+
+  /* ---------- ROTATIE-INDICATOR ---------- */
+  .rotatie-dots{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
+    display:flex; gap:10px; z-index:35;
+  }
+  .rotatie-dots .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--ink-soft); opacity:0.3;
+    transition: opacity .3s, transform .3s;
+  }
+  .rotatie-dots .dot.actief{ opacity:1; background:var(--red); transform:scale(1.25); }
 </style>
 
 <div class="sheet">
@@ -444,6 +553,10 @@ function dagtipVanVandaag(){
   </main>
 </div>
 
+<div class="rotatie-dots" id="rotatie-dots">
+  <div class="dot actief"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+</div>
+
 <button class="cfg-btn" onclick="cfgOpen()" title="Gegevens beheren">⚙️</button>
 <button class="cfg-btn rotatie-btn" onclick="rotatieVolgende(); rotatieHerstart();" title="Volgend scherm">⏭️</button>
 
@@ -479,6 +592,15 @@ function dagtipVanVandaag(){
       <div class="beurs-leeg">Koersen laden…</div>
     </div>
   </div>
+  <div class="rotatie-slide" id="slide-verlof">
+    <div class="rotatie-titel">🌴 <span>Verlof — komende 3 maanden</span></div>
+    <div class="verlof-legende">
+      <span class="leg-item"><span class="leg-blok vak"></span> Vakantie</span>
+      <span class="leg-item"><span class="leg-blok ziek"></span> Ziekte</span>
+      <span class="leg-item"><span class="leg-lijn"></span> Vandaag</span>
+    </div>
+    <div class="gantt-wrap" id="gantt-wrap"></div>
+  </div>
   <div class="rotatie-slide" id="slide-dagtip">
     <div class="rotatie-titel">💡 <span>Tip van de dag</span></div>
     <div class="dagtip-kaart">
@@ -513,10 +635,20 @@ function saveData(){
 /* ---------------- KLOK ---------------- */
 function updateClock(){
   const now = new Date();
-  document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const sep = now.getSeconds() % 2 === 0 ? ':' : '\u2009 \u2009'; // knipperende dubbelepunt
+  document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2,'0')}${sep}${String(now.getMinutes()).padStart(2,'0')}`;
   document.getElementById('date').textContent = now.toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 }
 updateClock(); setInterval(updateClock, 1000);
+
+/* ---------------- DAG/NACHT-THEMA ----------------
+   Tussen 19u 's avonds en 7u 's ochtends schakelt het dashboard
+   automatisch naar een donker thema, rustiger op een donker kantoor. */
+function themaUpdate(){
+  const uur = new Date().getHours();
+  document.body.classList.toggle('nacht', uur >= 19 || uur < 7);
+}
+themaUpdate(); setInterval(themaUpdate, 60*1000);
 
 /* ---------------- RENDER ---------------- */
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -769,6 +901,34 @@ function maakSparkline(closes, dates, omhoog){
   </svg>`;
 }
 
+const HISTORIE_CACHE_KEY = 'varda-beurs-historie-v1';
+
+async function haalHistorieOp(){
+  /* Geeft de gecachete geschiedenis van vandaag terug indien aanwezig,
+     anders wordt ze 1x per dag opgehaald (5 aanvragen, ruim onder de
+     limiet van 8/minuut) en lokaal bewaard voor de rest van de dag. */
+  const vandaag = new Date().toISOString().slice(0,10);
+  try{
+    const saved = localStorage.getItem(HISTORIE_CACHE_KEY);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(parsed.datum === vandaag && parsed.data) return parsed.data;
+    }
+  }catch(e){}
+
+  const wacht = ms => new Promise(r=> setTimeout(r, ms));
+  const data = {};
+  for(const s of BEURS_SYMBOLEN){
+    try{
+      const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${s.symbool}&interval=1day&outputsize=30&apikey=${BEURS_API_KEY}`);
+      data[s.symbool] = await res.json();
+    }catch(e){ data[s.symbool] = null; }
+    await wacht(400);
+  }
+  try{ localStorage.setItem(HISTORIE_CACHE_KEY, JSON.stringify({ datum: vandaag, data })); }catch(e){}
+  return data;
+}
+
 async function laadBeurskoersen(){
   const grid = document.getElementById('beurs-grid');
   if(!BEURS_API_KEY || BEURS_API_KEY === "JOUW_TWELVEDATA_API_KEY"){
@@ -776,19 +936,14 @@ async function laadBeurskoersen(){
     return;
   }
   try{
-    /* Bewust ná elkaar opgehaald (niet allemaal tegelijk): het gratis
-       Twelve Data-plan staat max. 8 aanvragen per minuut toe, en met
-       5 symbolen x 2 aanvragen zouden we daar anders overheen gaan. */
+    const historieData = await haalHistorieOp();
     const wacht = ms => new Promise(r=> setTimeout(r, ms));
     const resultaten = [];
     for(const s of BEURS_SYMBOLEN){
       const quoteRes = await fetch(`https://api.twelvedata.com/quote?symbol=${s.symbool}&apikey=${BEURS_API_KEY}`);
       const data = await quoteRes.json();
-      await wacht(600);
-      const historyRes = await fetch(`https://api.twelvedata.com/time_series?symbol=${s.symbool}&interval=1day&outputsize=30&apikey=${BEURS_API_KEY}`);
-      const history = await historyRes.json();
-      await wacht(600);
-      resultaten.push({ naam: s.naam, data, history });
+      resultaten.push({ naam: s.naam, data, history: historieData[s.symbool] });
+      await wacht(300);
     }
     grid.innerHTML = resultaten.map(r=>{
       if(!r.data || r.data.status === 'error' || r.data.close === undefined){
@@ -821,6 +976,107 @@ async function laadBeurskoersen(){
 }
 laadBeurskoersen(); setInterval(laadBeurskoersen, 20*60*1000);
 
+/* ---------------- VERLOFPAGINA (GANTT) ----------------
+   Toont enkel vakantie [VAK] en ziekte [Z] over de komende 3
+   maanden als tijdsbalken per medewerker. Andere verloftypes
+   in de VERLOF-lijst worden genegeerd. */
+function renderVerlofPagina(){
+  const wrap = document.getElementById('gantt-wrap');
+  const nu = new Date();
+  const vandaag = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate());
+  const eind = new Date(vandaag); eind.setMonth(eind.getMonth() + 3);
+  const msDag = 24*60*60*1000;
+  const totaalDagen = Math.round((eind - vandaag) / msDag);
+
+  const typeVan = soort => {
+    const m = String(soort).match(/^\[(\w+)\]/);
+    const code = m ? m[1].toUpperCase() : '';
+    if(code === 'VAK') return 'vak';
+    if(code === 'Z') return 'ziek';
+    return null;
+  };
+
+  const relevant = VERLOF
+    .map(v=> ({ naam: v.naam, type: typeVan(v.soort), vanD: new Date(v.van), totD: new Date(v.tot) }))
+    .filter(v=> v.type && v.totD >= vandaag && v.vanD <= eind);
+
+  if(relevant.length === 0){
+    wrap.innerHTML = `<div class="verlof-leeg">Geen vakantie of ziekte gepland in de komende 3 maanden.</div>`;
+    return;
+  }
+
+  /* Groepeer per medewerker, sorteer op eerst aankomende afwezigheid */
+  const perPersoon = {};
+  relevant.forEach(v=>{
+    if(!perPersoon[v.naam]) perPersoon[v.naam] = [];
+    perPersoon[v.naam].push(v);
+  });
+  const namen = Object.keys(perPersoon).sort((a,b)=>{
+    const eersteA = Math.min(...perPersoon[a].map(v=> v.vanD));
+    const eersteB = Math.min(...perPersoon[b].map(v=> v.vanD));
+    return eersteA - eersteB;
+  });
+
+  /* Afmetingen */
+  const naamKolom = 170, padRechts = 16, padBoven = 34, rijHoogte = 34, padOnder = 10;
+  const w = 1400;
+  const h = padBoven + namen.length * rijHoogte + padOnder;
+  const tijdBreedte = w - naamKolom - padRechts;
+  const dagX = dag => naamKolom + (dag / totaalDagen) * tijdBreedte;
+  const datumNaarDag = d => Math.max(0, Math.round((d - vandaag) / msDag));
+
+  let svg = '';
+
+  /* Maandgrenzen + labels */
+  const cursor = new Date(vandaag.getFullYear(), vandaag.getMonth(), 1);
+  while(cursor <= eind){
+    const dag = Math.round((cursor - vandaag) / msDag);
+    if(dag >= 0 && dag <= totaalDagen){
+      const x = dagX(dag);
+      svg += `<line x1="${x}" y1="${padBoven-8}" x2="${x}" y2="${h-padOnder}" class="g-grid maand"></line>`;
+    }
+    const labelStart = Math.max(0, Math.round((cursor - vandaag) / msDag));
+    const volgende = new Date(cursor); volgende.setMonth(volgende.getMonth()+1);
+    const labelEind = Math.min(totaalDagen, Math.round((volgende - vandaag) / msDag));
+    if(labelEind > labelStart + 5){
+      const midX = dagX((labelStart + labelEind) / 2);
+      const maandNaam = cursor.toLocaleDateString('nl-BE', { month:'long' });
+      svg += `<text x="${midX}" y="${padBoven-14}" text-anchor="middle" class="g-maand">${maandNaam}</text>`;
+    }
+    cursor.setMonth(cursor.getMonth()+1);
+  }
+
+  /* Weeklijnen (licht) */
+  for(let dag = 7 - vandaag.getDay() + 1; dag <= totaalDagen; dag += 7){
+    if(dag < 0) continue;
+    const x = dagX(dag);
+    svg += `<line x1="${x}" y1="${padBoven}" x2="${x}" y2="${h-padOnder}" class="g-grid"></line>`;
+  }
+
+  /* Rijen: naam + balken */
+  namen.forEach((naam, i)=>{
+    const y = padBoven + i * rijHoogte;
+    const midY = y + rijHoogte/2;
+    svg += `<line x1="${naamKolom}" y1="${y+rijHoogte}" x2="${w-padRechts}" y2="${y+rijHoogte}" class="g-rijlijn"></line>`;
+    svg += `<text x="${naamKolom-12}" y="${midY+5}" text-anchor="end" class="g-naam">${esc(naam)}</text>`;
+    perPersoon[naam].forEach(v=>{
+      const startDag = datumNaarDag(v.vanD < vandaag ? vandaag : v.vanD);
+      const eindDag = Math.min(totaalDagen, datumNaarDag(v.totD) + 1); /* einddag inbegrepen */
+      const x = dagX(startDag);
+      const breedte = Math.max(6, dagX(eindDag) - x);
+      svg += `<rect x="${x}" y="${y+7}" width="${breedte}" height="${rijHoogte-14}" rx="5" class="g-balk ${v.type}"></rect>`;
+    });
+  });
+
+  /* Vandaag-lijn */
+  const vandaagX = dagX(0) + 1;
+  svg += `<line x1="${vandaagX}" y1="${padBoven-4}" x2="${vandaagX}" y2="${h-padOnder}" class="g-vandaag"></line>`;
+  svg += `<text x="${vandaagX+6}" y="${padBoven+6}" class="g-vandaag-label">vandaag</text>`;
+
+  wrap.innerHTML = `<svg class="gantt-svg" viewBox="0 0 ${w} ${h}">${svg}</svg>`;
+}
+renderVerlofPagina();
+
 /* ---------------- DAGTIP ---------------- */
 function toonDagtip(){
   document.getElementById('dagtip-tekst').textContent = dagtipVanVandaag();
@@ -833,7 +1089,7 @@ toonDagtip();
    Staat tijdelijk stil zolang het ⚙️-configuratiepaneel open is.
    Kan ook meteen manueel doorgeklikt worden via het ⏭️-knopje rechtsonder,
    handig om snel te testen zonder telkens een minuut te wachten. */
-const rotatieFases = ['dashboard', 'beurs', 'dagtip'];
+const rotatieFases = ['dashboard', 'beurs', 'verlof', 'dagtip'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
@@ -843,7 +1099,9 @@ function rotatieVolgende(){
   const overlay = document.getElementById('rotatie-overlay');
   overlay.classList.toggle('tonen', fase !== 'dashboard');
   document.getElementById('slide-beurs').classList.toggle('tonen', fase === 'beurs');
+  document.getElementById('slide-verlof').classList.toggle('tonen', fase === 'verlof');
   document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
+  document.querySelectorAll('#rotatie-dots .dot').forEach((d,i)=> d.classList.toggle('actief', i === rotatieIndex));
 }
 
 function rotatieHerstart(){
