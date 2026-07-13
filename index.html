@@ -22,7 +22,7 @@ const LOCATIE = { naam: "Hoboken", lat: 51.1747, lon: 4.3487 };
    dashboard zelf, en daar op "Kopieer voor GitHub" klikken.
    ============================================================ */
 const AANBESTEDINGEN = [
-  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "12:00", pb: "afsp." },
+  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "10:00", pb: "afsp." },
 ];
 
 /* ============================================================
@@ -57,7 +57,7 @@ const VERJAARDAGEN = [
    De 3 nieuwste (op datum) worden getoond.
    ============================================================ */
 const MEDEDELINGEN = [
-  { tekst: "Ideeën voor het Dashbord? GRAAG! -> Nathan & Enrique ", datum: "2026-07-13" },
+  { tekst: "testtest", datum: "2026-07-01" },
 ];
 
 /* ============================================================
@@ -71,6 +71,20 @@ const MEDEDELINGEN = [
 const VERLOF = [
   { naam: "Chris", van: "2026-07-20", tot: "2026-07-27" },
   { naam: "Els",   van: "2026-08-01", tot: "2026-08-10" },
+];
+
+/* ============================================================
+   6. BEWERK HIER — BEURSKOERSEN (rotatiepagina)
+   Maak een gratis account op https://twelvedata.com, kopieer
+   je API-sleutel en plak die hieronder tussen de aanhalingstekens.
+   Zonder geldige sleutel toont het dashboard gewoon een melding
+   in plaats van de koersen.
+   ============================================================ */
+const BEURS_API_KEY = "4d1c8fc6d761419981a53e5e9c5112b6";
+const BEURS_SYMBOLEN = [
+  { naam: "S&P 500",    symbool: "SPX" },
+  { naam: "Dow Jones",  symbool: "DJI" },
+  { naam: "Nasdaq",     symbool: "IXIC" },
 ];
 </script>
 
@@ -328,6 +342,42 @@ const VERLOF = [
     padding:8px 14px; font-weight:600; font-size:12.5px; cursor:pointer;
   }
   .cfg-copy{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  /* ---------- ROTATIEPAGINA (BEURSKOERSEN) ---------- */
+  .rotatie-overlay{
+    position:fixed; inset:0; background:var(--bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:60px; opacity:0; pointer-events:none;
+    transition:opacity .6s ease;
+    z-index:30;
+  }
+  .rotatie-overlay.tonen{ opacity:1; pointer-events:auto; }
+  .rotatie-titel{
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:22px;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
+    margin-bottom:36px;
+  }
+  .rotatie-titel span{ color:var(--red); }
+  .beurs-grid{ display:flex; gap:30px; }
+  .beurs-kaart{
+    background:var(--card); border:1px solid var(--card-border); border-radius:20px;
+    box-shadow:var(--shadow); padding:34px 44px; min-width:280px; text-align:center;
+  }
+  .beurs-naam{
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:16px;
+    color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:14px;
+  }
+  .beurs-waarde{
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:38px; color:var(--ink);
+  }
+  .beurs-change{
+    margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600;
+  }
+  .beurs-change.up{ color:#1a8f5e; }
+  .beurs-change.down{ color:var(--red); }
+  .beurs-leeg{
+    font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
+  }
 </style>
 
 <div class="sheet">
@@ -416,6 +466,13 @@ const VERLOF = [
         <button class="cfg-copy" onclick="cfgCopy(this)">Kopieer voor GitHub</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="rotatie-overlay" id="rotatie-overlay">
+  <div class="rotatie-titel">📈 <span>Wereldindices</span></div>
+  <div class="beurs-grid" id="beurs-grid">
+    <div class="beurs-leeg">Koersen laden…</div>
   </div>
 </div>
 
@@ -735,6 +792,47 @@ ${DATA.verlof.map(v=>`  { naam: ${q(v.naam)}, van: ${q(v.van)}, tot: ${q(v.tot)}
   } else promptFallback(blok);
   function promptFallback(t){ window.prompt('Kopieer dit blok (Ctrl+C) en plak het in index.html op GitHub:', t); }
 }
+
+/* ---------------- BEURSKOERSEN ---------------- */
+async function laadBeurskoersen(){
+  const grid = document.getElementById('beurs-grid');
+  if(!BEURS_API_KEY || BEURS_API_KEY === "JOUW_TWELVEDATA_API_KEY"){
+    grid.innerHTML = `<div class="beurs-leeg">Nog geen Twelve Data API-sleutel ingevuld. Maak een gratis account op twelvedata.com en vul de sleutel in bij "BEURS_API_KEY" bovenaan de code.</div>`;
+    return;
+  }
+  try{
+    const resultaten = await Promise.all(BEURS_SYMBOLEN.map(async s=>{
+      const res = await fetch(`https://api.twelvedata.com/quote?symbol=${s.symbool}&apikey=${BEURS_API_KEY}`);
+      const data = await res.json();
+      return { naam: s.naam, data };
+    }));
+    grid.innerHTML = resultaten.map(r=>{
+      if(!r.data || r.data.status === 'error' || r.data.close === undefined){
+        return `<div class="beurs-kaart"><div class="beurs-naam">${esc(r.naam)}</div><div class="beurs-leeg">Geen data</div></div>`;
+      }
+      const close = parseFloat(r.data.close);
+      const change = parseFloat(r.data.change);
+      const pct = parseFloat(r.data.percent_change);
+      const omhoog = change >= 0;
+      return `<div class="beurs-kaart">
+        <div class="beurs-naam">${esc(r.naam)}</div>
+        <div class="beurs-waarde">${close.toLocaleString('nl-BE', {maximumFractionDigits:2})}</div>
+        <div class="beurs-change ${omhoog?'up':'down'}">${omhoog?'▲':'▼'} ${change.toFixed(2)} (${pct.toFixed(2)}%)</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    grid.innerHTML = `<div class="beurs-leeg">Koersen konden niet geladen worden. (In de Claude-preview is dit normaal; online werkt het wel, mits een geldige API-sleutel.)</div>`;
+  }
+}
+laadBeurskoersen(); setInterval(laadBeurskoersen, 15*60*1000);
+
+/* ---------------- ROTATIE TUSSEN DASHBOARD EN BEURSKOERSEN ----------------
+   Wisselt elke minuut tussen het hoofddashboard en de beurskoersen-pagina.
+   Staat tijdelijk stil zolang het ⚙️-configuratiepaneel open is. */
+setInterval(()=>{
+  if(cfgIsOpen) return;
+  document.getElementById('rotatie-overlay').classList.toggle('tonen');
+}, 60*1000);
 
 /* ---------------- AUTOMATISCH HERLADEN ----------------
    Elke 15 min, maar niet terwijl het configuratiepaneel
