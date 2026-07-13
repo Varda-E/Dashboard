@@ -22,7 +22,7 @@ const LOCATIE = { naam: "Hoboken", lat: 51.1747, lon: 4.3487 };
    dashboard zelf, en daar op "Kopieer voor GitHub" klikken.
    ============================================================ */
 const AANBESTEDINGEN = [
-  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "12:00", pb: "afsp." },
+  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "10:00", pb: "afsp." },
 ];
 
 /* ============================================================
@@ -57,7 +57,7 @@ const VERJAARDAGEN = [
    De 3 nieuwste (op datum) worden getoond.
    ============================================================ */
 const MEDEDELINGEN = [
-  { tekst: "Ideeën? Welkom! -> Nathan & Enrique", datum: "2026-07-01" },
+  { tekst: "testtest", datum: "2026-07-01" },
 ];
 
 /* ============================================================
@@ -118,7 +118,7 @@ const VERLOF = [
   { naam: "Jaafar Al-Rifaie", van: "2026-07-03", tot: "2026-07-09", soort: "[VAK] Vakantie (jaarlijks verlof)" },
   { naam: "Tim Reyntjens", van: "2026-07-03", tot: "2026-07-20", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
   { naam: "Karl Creemers", van: "2026-06-29", tot: "2026-07-17", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
-   { naam: "Tim Reyntjens", van: "2026-06-25", tot: "2026-07-23", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
+  { naam: "Tim Reyntjens", van: "2026-06-25", tot: "2026-07-23", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
 ];
 
 /* ============================================================
@@ -1014,8 +1014,16 @@ function renderVerlofPagina(){
     return null;
   };
 
+  /* Datums als LOKALE datums inlezen (new Date("JJJJ-MM-DD") zou
+     middernacht UTC geven, waardoor de startdag net buiten de
+     vergelijking valt en niet gekleurd wordt). */
+  const lokaleDatum = s => {
+    const [jj, mm, dd] = String(s).split('-').map(Number);
+    return new Date(jj, mm-1, dd);
+  };
+
   const relevant = VERLOF
-    .map(v=> ({ naam: v.naam, type: typeVan(v.soort), vanD: new Date(v.van), totD: new Date(v.tot) }))
+    .map(v=> ({ naam: v.naam, type: typeVan(v.soort), vanD: lokaleDatum(v.van), totD: lokaleDatum(v.tot) }))
     .filter(v=> v.type && v.totD >= start && v.vanD <= eind);
 
   if(relevant.length === 0){
