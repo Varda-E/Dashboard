@@ -57,7 +57,7 @@ const VERJAARDAGEN = [
    De 3 nieuwste (op datum) worden getoond.
    ============================================================ */
 const MEDEDELINGEN = [
-  { tekst: "IDEEËN? HEEL Graag -> Nathan & Enrique", datum: "2026-07-01" },
+  { tekst: "IDEEËN GRAAG! Nathan & Enrique", datum: "2026-07-01" },
 ];
 
 /* ============================================================
@@ -78,8 +78,31 @@ const BEURS_SYMBOLEN = [
   { naam: "Dow Jones (DIA)", symbool: "DIA" },
   { naam: "Nasdaq (QQQ)",    symbool: "QQQ" },
   { naam: "BEL20 (EWK)",     symbool: "EWK" },
-  { naam: "Olie (USO)",      symbool: "USO" },
+  { naam: "Olie & Energie (XLE)", symbool: "XLE" },
 ];
+
+/* ============================================================
+   7. BEWERK HIER — WEEKCITAAT / DAGTIP
+   Elke dag verschijnt automatisch de volgende tip in de lijst
+   (op basis van de datum, dus geen omkijken naar nodig). Voeg
+   gerust bij of verwijder — hoe meer erin staan, hoe langer het
+   duurt vóór ze herhalen.
+   ============================================================ */
+const DAGTIPS = [
+  "Veiligheid eerst: check altijd of de stroom is afgesloten vóór je aan een installatie werkt.",
+  "Een tevreden klant vertelt het aan 3 anderen — een ontevreden klant aan 10. Extra reden om altijd netjes op te ruimen na een werf.",
+  "Koffiepauze-weetje: LED-verlichting verbruikt tot 80% minder energie dan klassieke gloeilampen.",
+  "Kleine moeite, groot verschil: even goed communiceren met de klant over de planning scheelt achteraf veel telefoontjes.",
+  "Vergeet niet om je materiaal na de werf te checken — voorkomt onnodige zoektochten bij de volgende job.",
+  "Een goed afgewerkte kabelgoot is de handtekening van een vakman.",
+  "Neem tijdig pauze — een moe hoofd maakt sneller fouten, zeker met stroom in de buurt.",
+];
+function dagtipVanVandaag(){
+  const start = new Date(new Date().getFullYear(), 0, 0);
+  const diff = new Date() - start;
+  const dagVanJaar = Math.floor(diff / (1000*60*60*24));
+  return DAGTIPS[dagVanJaar % DAGTIPS.length];
+}
 </script>
 
 <style>
@@ -240,6 +263,7 @@ const BEURS_SYMBOLEN = [
     opacity:0.45; transition:opacity .2s;
   }
   .cfg-btn:hover{ opacity:1; }
+  .rotatie-btn{ right:76px; z-index:41; }
 
   .cfg-overlay{
     position:fixed; inset:0; background:rgba(62,61,68,0.45);
@@ -316,31 +340,51 @@ const BEURS_SYMBOLEN = [
     margin-bottom:36px;
   }
   .rotatie-titel span{ color:var(--red); }
-  .beurs-grid{ display:flex; gap:22px; flex-wrap:wrap; justify-content:center; max-width:1400px; }
+  .rotatie-slide{ display:none; flex-direction:column; align-items:center; }
+  .rotatie-slide.tonen{ display:flex; }
+  .beurs-grid{ display:flex; gap:20px; flex-wrap:wrap; justify-content:center; max-width:1600px; }
   .beurs-kaart{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
-    box-shadow:var(--shadow); padding:26px 30px; min-width:220px; text-align:center;
+    box-shadow:var(--shadow); padding:24px 26px; width:320px; text-align:center;
   }
   .beurs-naam{
-    font-family:'Manrope',sans-serif; font-weight:700; font-size:16px;
-    color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:14px;
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:15px;
+    color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;
   }
   .beurs-waarde{
-    font-family:'Manrope',sans-serif; font-weight:800; font-size:32px; color:var(--ink);
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:30px; color:var(--ink);
   }
   .beurs-change{
-    margin-top:8px; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;
+    margin-top:6px; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;
   }
   .beurs-change.up{ color:#1a8f5e; }
   .beurs-change.down{ color:var(--red); }
-  .beurs-sparkline{ margin-top:14px; display:block; width:100%; height:auto; }
-  .beurs-sparkline .lijn{ fill:none; stroke-width:2.5; }
-  .beurs-sparkline .lijn.up{ stroke:#1a8f5e; }
-  .beurs-sparkline .lijn.down{ stroke:var(--red); }
-  .beurs-sparkline .vlak{ opacity:0.08; }
-  .beurs-sparkline .vlak.up{ fill:#1a8f5e; }
-  .beurs-sparkline .vlak.down{ fill:var(--red); }
-  .beurs-periode{ margin-top:6px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-soft); }
+  .beurs-chart{ margin-top:12px; display:block; width:100%; height:auto; }
+  .beurs-chart .lijn{ fill:none; stroke-width:2.5; }
+  .beurs-chart .lijn.up{ stroke:#1a8f5e; }
+  .beurs-chart .lijn.down{ stroke:var(--red); }
+  .beurs-chart .vlak{ opacity:0.08; }
+  .beurs-chart .vlak.up{ fill:#1a8f5e; }
+  .beurs-chart .vlak.down{ fill:var(--red); }
+  .beurs-chart .chart-grid{ stroke:var(--card-border); stroke-width:1; }
+  .beurs-chart .chart-as{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; fill:var(--ink-soft); }
+  .beurs-chart .chart-as-y{ text-anchor:end; }
+  .beurs-chart .chart-as-x-links{ text-anchor:start; }
+  .beurs-chart .chart-as-x-rechts{ text-anchor:end; }
+
+  .dagtip-kaart{
+    background:var(--card); border:1px solid var(--card-border); border-radius:20px;
+    box-shadow:var(--shadow); padding:44px 60px; max-width:780px; text-align:center;
+  }
+  .dagtip-icoon{ font-size:38px; margin-bottom:18px; }
+  .dagtip-tekst{
+    font-family:'Manrope',sans-serif; font-weight:600; font-size:24px;
+    line-height:1.5; color:var(--ink);
+  }
+  .dagtip-datum{
+    margin-top:20px; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--ink-soft); text-transform:capitalize;
+  }
   .beurs-leeg{
     font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
   }
@@ -401,6 +445,7 @@ const BEURS_SYMBOLEN = [
 </div>
 
 <button class="cfg-btn" onclick="cfgOpen()" title="Gegevens beheren">⚙️</button>
+<button class="cfg-btn rotatie-btn" onclick="rotatieVolgende(); rotatieHerstart();" title="Volgend scherm">⏭️</button>
 
 <div class="cfg-overlay" id="cfg-overlay">
   <div class="cfg-modal">
@@ -428,9 +473,19 @@ const BEURS_SYMBOLEN = [
 </div>
 
 <div class="rotatie-overlay" id="rotatie-overlay">
-  <div class="rotatie-titel">📈 <span>Markten</span></div>
-  <div class="beurs-grid" id="beurs-grid">
-    <div class="beurs-leeg">Koersen laden…</div>
+  <div class="rotatie-slide" id="slide-beurs">
+    <div class="rotatie-titel">📈 <span>Markten</span></div>
+    <div class="beurs-grid" id="beurs-grid">
+      <div class="beurs-leeg">Koersen laden…</div>
+    </div>
+  </div>
+  <div class="rotatie-slide" id="slide-dagtip">
+    <div class="rotatie-titel">💡 <span>Tip van de dag</span></div>
+    <div class="dagtip-kaart">
+      <div class="dagtip-icoon">💡</div>
+      <div class="dagtip-tekst" id="dagtip-tekst"></div>
+      <div class="dagtip-datum" id="dagtip-datum"></div>
+    </div>
   </div>
 </div>
 
@@ -679,23 +734,38 @@ ${DATA.med.map(m=>`  { tekst: ${q(m.tekst)}, datum: ${q(m.datum)} },`).join('\n'
 }
 
 /* ---------------- BEURSKOERSEN ---------------- */
-function maakSparkline(closes, omhoog){
+function maakSparkline(closes, dates, omhoog){
   if(!closes || closes.length < 2) return '';
-  const w = 220, h = 60, pad = 4;
+  const w = 300, h = 140;
+  const padLinks = 46, padRechts = 10, padBoven = 14, padOnder = 26;
   const min = Math.min(...closes), max = Math.max(...closes);
   const spread = (max - min) || 1;
-  const stapX = (w - pad*2) / (closes.length - 1);
+  const breedte = w - padLinks - padRechts;
+  const hoogte = h - padBoven - padOnder;
+  const stapX = breedte / (closes.length - 1);
   const punten = closes.map((c,i)=>{
-    const x = pad + i*stapX;
-    const y = pad + (1 - (c - min)/spread) * (h - pad*2);
+    const x = padLinks + i*stapX;
+    const y = padBoven + (1 - (c - min)/spread) * hoogte;
     return [x,y];
   });
   const lijnPad = punten.map(p=> p.join(',')).join(' ');
-  const vlakPad = `${pad},${h-pad} ` + lijnPad + ` ${w-pad},${h-pad}`;
+  const vlakPad = `${padLinks},${h-padOnder} ` + lijnPad + ` ${w-padRechts},${h-padOnder}`;
   const kleur = omhoog ? 'up' : 'down';
-  return `<svg class="beurs-sparkline" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
+
+  const fmt = n => n.toLocaleString('nl-BE', {maximumFractionDigits:2});
+  const datumFmt = d => new Date(d).toLocaleDateString('nl-BE', {day:'numeric', month:'short'});
+
+  return `<svg class="beurs-chart" viewBox="0 0 ${w} ${h}">
+    <line x1="${padLinks}" y1="${padBoven}" x2="${w-padRechts}" y2="${padBoven}" class="chart-grid"></line>
+    <line x1="${padLinks}" y1="${padBoven + hoogte/2}" x2="${w-padRechts}" y2="${padBoven + hoogte/2}" class="chart-grid"></line>
+    <line x1="${padLinks}" y1="${h-padOnder}" x2="${w-padRechts}" y2="${h-padOnder}" class="chart-grid"></line>
+    <text x="${padLinks-6}" y="${padBoven+4}" class="chart-as chart-as-y">${fmt(max)}</text>
+    <text x="${padLinks-6}" y="${padBoven+hoogte/2+4}" class="chart-as chart-as-y">${fmt((max+min)/2)}</text>
+    <text x="${padLinks-6}" y="${h-padOnder+4}" class="chart-as chart-as-y">${fmt(min)}</text>
     <polygon class="vlak ${kleur}" points="${vlakPad}"></polygon>
     <polyline class="lijn ${kleur}" points="${lijnPad}"></polyline>
+    <text x="${padLinks}" y="${h-6}" class="chart-as chart-as-x-links">${datumFmt(dates[0])}</text>
+    <text x="${w-padRechts}" y="${h-6}" class="chart-as chart-as-x-rechts">${datumFmt(dates[dates.length-1])}</text>
   </svg>`;
 }
 
@@ -729,12 +799,13 @@ async function laadBeurskoersen(){
       const pct = parseFloat(r.data.percent_change);
       const omhoog = change >= 0;
 
-      let sparkline = '', periodeLabel = '';
+      let sparkline = '';
       if(r.history && Array.isArray(r.history.values) && r.history.values.length > 1){
-        const closes = r.history.values.map(v=> parseFloat(v.close)).reverse();
+        const punten = r.history.values.map(v=> ({ datum: v.datetime, close: parseFloat(v.close) })).reverse();
+        const closes = punten.map(p=> p.close);
+        const dates = punten.map(p=> p.datum);
         const trendOmhoog = closes[closes.length-1] >= closes[0];
-        sparkline = maakSparkline(closes, trendOmhoog);
-        periodeLabel = `<div class="beurs-periode">laatste ${closes.length} dagen</div>`;
+        sparkline = maakSparkline(closes, dates, trendOmhoog);
       }
 
       return `<div class="beurs-kaart">
@@ -742,7 +813,6 @@ async function laadBeurskoersen(){
         <div class="beurs-waarde">${close.toLocaleString('nl-BE', {maximumFractionDigits:2})}</div>
         <div class="beurs-change ${omhoog?'up':'down'}">${omhoog?'▲':'▼'} ${change.toFixed(2)} (${pct.toFixed(2)}%)</div>
         ${sparkline}
-        ${periodeLabel}
       </div>`;
     }).join('');
   }catch(e){
@@ -751,13 +821,39 @@ async function laadBeurskoersen(){
 }
 laadBeurskoersen(); setInterval(laadBeurskoersen, 20*60*1000);
 
-/* ---------------- ROTATIE TUSSEN DASHBOARD EN BEURSKOERSEN ----------------
-   Wisselt elke minuut tussen het hoofddashboard en de beurskoersen-pagina.
-   Staat tijdelijk stil zolang het ⚙️-configuratiepaneel open is. */
-setInterval(()=>{
-  if(cfgIsOpen) return;
-  document.getElementById('rotatie-overlay').classList.toggle('tonen');
-}, 60*1000);
+/* ---------------- DAGTIP ---------------- */
+function toonDagtip(){
+  document.getElementById('dagtip-tekst').textContent = dagtipVanVandaag();
+  document.getElementById('dagtip-datum').textContent = new Date().toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long' });
+}
+toonDagtip();
+
+/* ---------------- ROTATIE TUSSEN DASHBOARD, BEURSKOERSEN EN DAGTIP ----------------
+   Wisselt elke minuut: hoofddashboard → beurskoersen → tip van de dag → opnieuw.
+   Staat tijdelijk stil zolang het ⚙️-configuratiepaneel open is.
+   Kan ook meteen manueel doorgeklikt worden via het ⏭️-knopje rechtsonder,
+   handig om snel te testen zonder telkens een minuut te wachten. */
+const rotatieFases = ['dashboard', 'beurs', 'dagtip'];
+let rotatieIndex = 0;
+let rotatieTimer = null;
+
+function rotatieVolgende(){
+  rotatieIndex = (rotatieIndex + 1) % rotatieFases.length;
+  const fase = rotatieFases[rotatieIndex];
+  const overlay = document.getElementById('rotatie-overlay');
+  overlay.classList.toggle('tonen', fase !== 'dashboard');
+  document.getElementById('slide-beurs').classList.toggle('tonen', fase === 'beurs');
+  document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
+}
+
+function rotatieHerstart(){
+  if(rotatieTimer) clearInterval(rotatieTimer);
+  rotatieTimer = setInterval(()=>{
+    if(cfgIsOpen) return;
+    rotatieVolgende();
+  }, 60*1000);
+}
+rotatieHerstart();
 
 /* ---------------- AUTOMATISCH HERLADEN ----------------
    Elke 15 min, maar niet terwijl het configuratiepaneel
