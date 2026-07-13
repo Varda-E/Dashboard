@@ -22,7 +22,7 @@ const LOCATIE = { naam: "Hoboken", lat: 51.1747, lon: 4.3487 };
    dashboard zelf, en daar op "Kopieer voor GitHub" klikken.
    ============================================================ */
 const AANBESTEDINGEN = [
-  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "12:00", pb: "afsp." },
+  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "10:00", pb: "afsp." },
 ];
 
 /* ============================================================
@@ -57,7 +57,7 @@ const VERJAARDAGEN = [
    De 3 nieuwste (op datum) worden getoond.
    ============================================================ */
 const MEDEDELINGEN = [
-  { tekst: "IDEEËN HEEL GRAAG :)) -> Nathan & Enrique", datum: "2026-07-01" },
+  { tekst: "testtest", datum: "2026-07-01" },
 ];
 
 /* ============================================================
@@ -451,38 +451,45 @@ function dagtipVanVandaag(){
     font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
   }
 
-  /* ---------- VERLOFPAGINA (GANTT) ---------- */
+  /* ---------- VERLOFPAGINA (DAGKALENDER) ---------- */
   .verlof-legende{
     display:flex; gap:26px; margin:-14px 0 18px 0;
     font-size:13.5px; color:var(--ink-soft); align-items:center;
   }
   .leg-item{ display:flex; align-items:center; gap:8px; }
-  .leg-blok{ width:26px; height:13px; border-radius:4px; display:inline-block; }
+  .leg-blok{ width:22px; height:14px; border-radius:4px; display:inline-block; }
   .leg-blok.vak{ background:var(--teal); }
   .leg-blok.ziek{ background:var(--red); opacity:0.75; }
-  .leg-lijn{ width:2px; height:16px; background:var(--red); display:inline-block; }
+  .leg-blok.weekend{ background:var(--ink-soft); opacity:0.15; }
   .gantt-wrap{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
-    box-shadow:var(--shadow); padding:24px 28px;
-    max-width:1500px; width:92vw; max-height:66vh; overflow:auto;
+    box-shadow:var(--shadow); padding:22px 26px;
+    max-width:1560px; width:94vw; max-height:68vh; overflow:auto;
   }
   .gantt-svg{ display:block; width:100%; height:auto; }
   .gantt-svg .g-maand{
     font-family:'Manrope',sans-serif; font-weight:700; font-size:13px;
     fill:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em;
   }
-  .gantt-svg .g-grid{ stroke:var(--card-border); stroke-width:1; }
-  .gantt-svg .g-grid.maand{ stroke:var(--ink-soft); stroke-opacity:0.25; }
-  .gantt-svg .g-naam{
-    font-family:'Inter',sans-serif; font-weight:600; font-size:14px; fill:var(--ink);
+  .gantt-svg .g-wd{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; fill:var(--ink-soft);
+    text-anchor:middle; text-transform:lowercase;
   }
-  .gantt-svg .g-rijlijn{ stroke:var(--card-border); stroke-width:1; }
-  .gantt-svg .g-balk{ rx:5; }
-  .gantt-svg .g-balk.vak{ fill:var(--teal); }
-  .gantt-svg .g-balk.ziek{ fill:var(--red); opacity:0.75; }
-  .gantt-svg .g-vandaag{ stroke:var(--red); stroke-width:2; stroke-dasharray:5 4; }
-  .gantt-svg .g-vandaag-label{
-    font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--red); font-weight:600;
+  .gantt-svg .g-dagnr{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; fill:var(--ink);
+    text-anchor:middle; font-weight:600;
+  }
+  .gantt-svg .g-dagnr.weekend{ fill:var(--ink-soft); opacity:0.6; }
+  .gantt-svg .g-dagnr.vandaag{ fill:var(--red); }
+  .gantt-svg .g-naam{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; fill:var(--ink);
+  }
+  .gantt-svg .g-cel{ fill:var(--bg); rx:4; }
+  .gantt-svg .g-cel.weekend{ fill:var(--ink-soft); opacity:0.12; }
+  .gantt-svg .g-cel.vak{ fill:var(--teal); opacity:1; }
+  .gantt-svg .g-cel.ziek{ fill:var(--red); opacity:0.75; }
+  .gantt-svg .g-vandaag-kader{
+    fill:none; stroke:var(--red); stroke-width:2; rx:6;
   }
   .verlof-leeg{ padding:26px; font-size:15px; color:var(--ink-soft); text-align:center; }
 
@@ -593,11 +600,11 @@ function dagtipVanVandaag(){
     </div>
   </div>
   <div class="rotatie-slide" id="slide-verlof">
-    <div class="rotatie-titel">🌴 <span>Verlof — komende 3 maanden</span></div>
+    <div class="rotatie-titel">🌴 <span>Verlof — komende 4 weken</span></div>
     <div class="verlof-legende">
       <span class="leg-item"><span class="leg-blok vak"></span> Vakantie</span>
       <span class="leg-item"><span class="leg-blok ziek"></span> Ziekte</span>
-      <span class="leg-item"><span class="leg-lijn"></span> Vandaag</span>
+      <span class="leg-item"><span class="leg-blok weekend"></span> Weekend</span>
     </div>
     <div class="gantt-wrap" id="gantt-wrap"></div>
   </div>
@@ -976,17 +983,27 @@ async function laadBeurskoersen(){
 }
 laadBeurskoersen(); setInterval(laadBeurskoersen, 20*60*1000);
 
-/* ---------------- VERLOFPAGINA (GANTT) ----------------
-   Toont enkel vakantie [VAK] en ziekte [Z] over de komende 3
-   maanden als tijdsbalken per medewerker. Andere verloftypes
-   in de VERLOF-lijst worden genegeerd. */
+/* ---------------- VERLOFPAGINA (DAGKALENDER) ----------------
+   Toont enkel vakantie [VAK] en ziekte [Z] als gekleurde dagcellen
+   per medewerker, over een rollend venster van 4 weken dat start
+   op maandag van de huidige week. Zodra een week voorbij is,
+   schuift het venster vanzelf op naar de volgende. */
 function renderVerlofPagina(){
   const wrap = document.getElementById('gantt-wrap');
   const nu = new Date();
   const vandaag = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate());
-  const eind = new Date(vandaag); eind.setMonth(eind.getMonth() + 3);
+  /* Start op maandag van de huidige week */
+  const dagVanWeek = (vandaag.getDay() + 6) % 7; /* ma=0 ... zo=6 */
+  const start = new Date(vandaag); start.setDate(start.getDate() - dagVanWeek);
+  const AANTAL_DAGEN = 28;
   const msDag = 24*60*60*1000;
-  const totaalDagen = Math.round((eind - vandaag) / msDag);
+
+  const dagen = [];
+  for(let i=0; i<AANTAL_DAGEN; i++){
+    const d = new Date(start); d.setDate(d.getDate()+i);
+    dagen.push(d);
+  }
+  const eind = dagen[AANTAL_DAGEN-1];
 
   const typeVan = soort => {
     const m = String(soort).match(/^\[(\w+)\]/);
@@ -998,14 +1015,13 @@ function renderVerlofPagina(){
 
   const relevant = VERLOF
     .map(v=> ({ naam: v.naam, type: typeVan(v.soort), vanD: new Date(v.van), totD: new Date(v.tot) }))
-    .filter(v=> v.type && v.totD >= vandaag && v.vanD <= eind);
+    .filter(v=> v.type && v.totD >= start && v.vanD <= eind);
 
   if(relevant.length === 0){
-    wrap.innerHTML = `<div class="verlof-leeg">Geen vakantie of ziekte gepland in de komende 3 maanden.</div>`;
+    wrap.innerHTML = `<div class="verlof-leeg">Geen vakantie of ziekte gepland in de komende 4 weken.</div>`;
     return;
   }
 
-  /* Groepeer per medewerker, sorteer op eerst aankomende afwezigheid */
   const perPersoon = {};
   relevant.forEach(v=>{
     if(!perPersoon[v.naam]) perPersoon[v.naam] = [];
@@ -1018,60 +1034,56 @@ function renderVerlofPagina(){
   });
 
   /* Afmetingen */
-  const naamKolom = 170, padRechts = 16, padBoven = 34, rijHoogte = 34, padOnder = 10;
-  const w = 1400;
+  const naamKolom = 180, padRechts = 8, padBoven = 58, rijHoogte = 38, padOnder = 8;
+  const w = 1480;
+  const celGap = 3;
+  const celBreedte = (w - naamKolom - padRechts - (AANTAL_DAGEN-1)*celGap) / AANTAL_DAGEN;
   const h = padBoven + namen.length * rijHoogte + padOnder;
-  const tijdBreedte = w - naamKolom - padRechts;
-  const dagX = dag => naamKolom + (dag / totaalDagen) * tijdBreedte;
-  const datumNaarDag = d => Math.max(0, Math.round((d - vandaag) / msDag));
+  const dagX = i => naamKolom + i * (celBreedte + celGap);
 
+  const wkNamen = ['zo','ma','di','wo','do','vr','za'];
   let svg = '';
 
-  /* Maandgrenzen + labels */
-  const cursor = new Date(vandaag.getFullYear(), vandaag.getMonth(), 1);
-  while(cursor <= eind){
-    const dag = Math.round((cursor - vandaag) / msDag);
-    if(dag >= 0 && dag <= totaalDagen){
-      const x = dagX(dag);
-      svg += `<line x1="${x}" y1="${padBoven-8}" x2="${x}" y2="${h-padOnder}" class="g-grid maand"></line>`;
+  /* Maandlabels boven de dagen waar een maand begint (of bij de eerste dag) */
+  dagen.forEach((d, i)=>{
+    if(i === 0 || d.getDate() === 1){
+      const maandNaam = d.toLocaleDateString('nl-BE', { month:'long' });
+      svg += `<text x="${dagX(i)}" y="14" class="g-maand">${maandNaam}</text>`;
     }
-    const labelStart = Math.max(0, Math.round((cursor - vandaag) / msDag));
-    const volgende = new Date(cursor); volgende.setMonth(volgende.getMonth()+1);
-    const labelEind = Math.min(totaalDagen, Math.round((volgende - vandaag) / msDag));
-    if(labelEind > labelStart + 5){
-      const midX = dagX((labelStart + labelEind) / 2);
-      const maandNaam = cursor.toLocaleDateString('nl-BE', { month:'long' });
-      svg += `<text x="${midX}" y="${padBoven-14}" text-anchor="middle" class="g-maand">${maandNaam}</text>`;
-    }
-    cursor.setMonth(cursor.getMonth()+1);
-  }
+  });
 
-  /* Weeklijnen (licht) */
-  for(let dag = 7 - vandaag.getDay() + 1; dag <= totaalDagen; dag += 7){
-    if(dag < 0) continue;
-    const x = dagX(dag);
-    svg += `<line x1="${x}" y1="${padBoven}" x2="${x}" y2="${h-padOnder}" class="g-grid"></line>`;
-  }
+  /* Dagkoppen: weekdag + dagnummer */
+  dagen.forEach((d, i)=>{
+    const isWeekend = d.getDay()===0 || d.getDay()===6;
+    const isVandaag = d.getTime()===vandaag.getTime();
+    const midX = dagX(i) + celBreedte/2;
+    svg += `<text x="${midX}" y="34" class="g-wd">${wkNamen[d.getDay()]}</text>`;
+    svg += `<text x="${midX}" y="50" class="g-dagnr ${isWeekend?'weekend':''} ${isVandaag?'vandaag':''}">${d.getDate()}</text>`;
+  });
 
-  /* Rijen: naam + balken */
-  namen.forEach((naam, i)=>{
-    const y = padBoven + i * rijHoogte;
-    const midY = y + rijHoogte/2;
-    svg += `<line x1="${naamKolom}" y1="${y+rijHoogte}" x2="${w-padRechts}" y2="${y+rijHoogte}" class="g-rijlijn"></line>`;
-    svg += `<text x="${naamKolom-12}" y="${midY+5}" text-anchor="end" class="g-naam">${esc(naam)}</text>`;
-    perPersoon[naam].forEach(v=>{
-      const startDag = datumNaarDag(v.vanD < vandaag ? vandaag : v.vanD);
-      const eindDag = Math.min(totaalDagen, datumNaarDag(v.totD) + 1); /* einddag inbegrepen */
-      const x = dagX(startDag);
-      const breedte = Math.max(6, dagX(eindDag) - x);
-      svg += `<rect x="${x}" y="${y+7}" width="${breedte}" height="${rijHoogte-14}" rx="5" class="g-balk ${v.type}"></rect>`;
+  /* Rijen: naam + dagcellen */
+  namen.forEach((naam, ri)=>{
+    const y = padBoven + ri * rijHoogte;
+    svg += `<text x="${naamKolom-12}" y="${y + rijHoogte/2 + 5}" text-anchor="end" class="g-naam">${esc(naam)}</text>`;
+    dagen.forEach((d, i)=>{
+      const isWeekend = d.getDay()===0 || d.getDay()===6;
+      /* Bepaal of deze persoon deze dag afwezig is (ziekte gaat voor bij overlap) */
+      let type = null;
+      perPersoon[naam].forEach(v=>{
+        if(d >= v.vanD && d <= v.totD){
+          if(type !== 'ziek') type = v.type;
+        }
+      });
+      const klasse = type ? type : (isWeekend ? 'weekend' : '');
+      svg += `<rect x="${dagX(i)}" y="${y+5}" width="${celBreedte}" height="${rijHoogte-10}" rx="4" class="g-cel ${klasse}"></rect>`;
     });
   });
 
-  /* Vandaag-lijn */
-  const vandaagX = dagX(0) + 1;
-  svg += `<line x1="${vandaagX}" y1="${padBoven-4}" x2="${vandaagX}" y2="${h-padOnder}" class="g-vandaag"></line>`;
-  svg += `<text x="${vandaagX+6}" y="${padBoven+6}" class="g-vandaag-label">vandaag</text>`;
+  /* Kader rond de kolom van vandaag */
+  const vandaagIndex = Math.round((vandaag - start) / msDag);
+  if(vandaagIndex >= 0 && vandaagIndex < AANTAL_DAGEN){
+    svg += `<rect x="${dagX(vandaagIndex)-2}" y="${padBoven+1}" width="${celBreedte+4}" height="${namen.length * rijHoogte - 4}" rx="6" class="g-vandaag-kader"></rect>`;
+  }
 
   wrap.innerHTML = `<svg class="gantt-svg" viewBox="0 0 ${w} ${h}">${svg}</svg>`;
 }
