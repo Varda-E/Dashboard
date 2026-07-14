@@ -57,7 +57,7 @@ const VERJAARDAGEN = [
    De 3 nieuwste (op datum) worden getoond.
    ============================================================ */
 const MEDEDELINGEN = [
-  { tekst: "Ideeën graag -> Nathan & Enrique!!", datum: "2026-07-01" },
+  { tekst: "Dag 2! -> Ideeën, graag! Nathan & Enrique", datum: "2026-07-14" },
 ];
 
 /* ============================================================
@@ -603,7 +603,7 @@ function dagtipVanVandaag(){
   <div class="rotatie-slide" id="slide-verlof">
     <div class="rotatie-titel">🌴 <span>Verlof — komende 4 weken</span></div>
     <div class="verlof-legende">
-      <span class="leg-item"><span class="leg-blok vak"></span> Vakantie</span>
+      <span class="leg-item"><span class="leg-blok vak"></span> Afwezig / vakantie</span>
       <span class="leg-item"><span class="leg-blok ziek"></span> Ziekte</span>
       <span class="leg-item"><span class="leg-blok weekend"></span> Weekend</span>
     </div>
@@ -1009,9 +1009,10 @@ function renderVerlofPagina(){
   const typeVan = soort => {
     const m = String(soort).match(/^\[(\w+)\]/);
     const code = m ? m[1].toUpperCase() : '';
-    if(code === 'VAK') return 'vak';
+    /* Ziekte apart (rood); ál de rest (VAK, TOA, OnAF, BF, RECB, ...)
+       telt gewoon als "niet aanwezig" en wordt als vakantie (teal) getoond. */
     if(code === 'Z') return 'ziek';
-    return null;
+    return 'vak';
   };
 
   /* Datums als LOKALE datums inlezen (new Date("JJJJ-MM-DD") zou
