@@ -22,7 +22,7 @@ const LOCATIE = { naam: "Hoboken", lat: 51.1747, lon: 4.3487 };
    dashboard zelf, en daar op "Kopieer voor GitHub" klikken.
    ============================================================ */
 const AANBESTEDINGEN = [
-  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "12:00", pb: "afsp." },
+  { klant: "Prov. Oost-vlaanderen",   werf: "Golf",     datum: "2026-08-31", uur: "10:00", pb: "afsp." },
 ];
 
 /* ============================================================
@@ -57,7 +57,7 @@ const VERJAARDAGEN = [
    De 3 nieuwste (op datum) worden getoond.
    ============================================================ */
 const MEDEDELINGEN = [
-  { tekst: "Dag 2! -> Ideeën, graag! Nathan & Enrique", datum: "2026-07-14" },
+  { tekst: "testtest", datum: "2026-07-01" },
 ];
 
 /* ============================================================
@@ -462,6 +462,7 @@ function dagtipVanVandaag(){
   .leg-blok.vak{ background:var(--teal); }
   .leg-blok.ziek{ background:var(--red); opacity:0.75; }
   .leg-blok.weekend{ background:var(--ink-soft); opacity:0.15; }
+  .leg-blok.feestdag{ background:#4a4952; }
   .gantt-wrap{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
     box-shadow:var(--shadow); padding:22px 26px;
@@ -487,6 +488,10 @@ function dagtipVanVandaag(){
   }
   .gantt-svg .g-cel{ fill:var(--bg); rx:4; }
   .gantt-svg .g-cel.weekend{ fill:var(--ink-soft); opacity:0.12; }
+  .gantt-svg .g-cel.feestdag{ fill:#4a4952; opacity:0.85; }
+  body.nacht .gantt-svg .g-cel.feestdag{ fill:#0f1013; opacity:1; }
+  .gantt-svg .g-dagnr.feestdag{ fill:#4a4952; }
+  body.nacht .gantt-svg .g-dagnr.feestdag{ fill:#a9a9b4; }
   .gantt-svg .g-cel.vak{ fill:var(--teal); opacity:1; }
   .gantt-svg .g-cel.ziek{ fill:var(--red); opacity:0.75; }
   .gantt-svg .g-vandaag-kader{
@@ -606,6 +611,7 @@ function dagtipVanVandaag(){
       <span class="leg-item"><span class="leg-blok vak"></span> Afwezig / vakantie</span>
       <span class="leg-item"><span class="leg-blok ziek"></span> Ziekte</span>
       <span class="leg-item"><span class="leg-blok weekend"></span> Weekend</span>
+      <span class="leg-item"><span class="leg-blok feestdag"></span> Feestdag</span>
     </div>
     <div class="gantt-wrap" id="gantt-wrap"></div>
   </div>
@@ -626,16 +632,33 @@ function dagtipVanVandaag(){
    bewaard (localStorage) en gaan vóór op de standaardwaarden. */
 const STORE_KEY = 'varda-dashboard-data-v3';
 let DATA = { aanb: AANBESTEDINGEN, verj: VERJAARDAGEN, med: MEDEDELINGEN };
+let lokaleDataActief = false;
 try{
   const saved = localStorage.getItem(STORE_KEY);
   if(saved){
     const p = JSON.parse(saved);
-    if(p.aanb && p.verj && p.med) DATA = p;
+    if(p.aanb && p.verj && p.med){ DATA = p; lokaleDataActief = true; }
   }
 }catch(e){ /* localStorage niet beschikbaar: gewoon standaardwaarden gebruiken */ }
 
+/* Klein zichtbaar labeltje zodat een afwijking t.o.v. GitHub nooit
+   onopgemerkt blijft (dit heeft eerder al eens voor verwarring gezorgd). */
+function toonLokaleDataLabel(){
+  let el = document.getElementById('lokale-data-label');
+  if(!lokaleDataActief){ if(el) el.remove(); return; }
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'lokale-data-label';
+    el.style.cssText = 'position:fixed;left:22px;bottom:22px;z-index:40;font-family:monospace;font-size:11px;padding:6px 12px;border-radius:8px;background:rgba(188,23,2,0.10);color:#bc1702;border:1px solid rgba(188,23,2,0.3);';
+    el.textContent = '⚠ lokale gegevens actief (wijkt mogelijk af van GitHub)';
+    document.body.appendChild(el);
+  }
+}
+
 function saveData(){
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }catch(e){}
+  lokaleDataActief = true;
+  toonLokaleDataLabel();
   renderAll();
   cfgRender();
 }
@@ -718,6 +741,7 @@ function renderMededelingen(){
 
 function renderAll(){ renderAanbestedingen(); renderVerjaardagen(); renderMededelingen(); }
 renderAll();
+toonLokaleDataLabel();
 
 /* ---------------- WEER (Open-Meteo) ---------------- */
 const WMO = {
@@ -849,6 +873,8 @@ function cfgReset(){
   if(!confirm('Lokale wijzigingen op dit toestel wissen en terugkeren naar de GitHub-versie?')) return;
   try{ localStorage.removeItem(STORE_KEY); }catch(e){}
   DATA = { aanb: AANBESTEDINGEN, verj: VERJAARDAGEN, med: MEDEDELINGEN };
+  lokaleDataActief = false;
+  toonLokaleDataLabel();
   renderAll(); cfgRender();
 }
 
@@ -948,8 +974,11 @@ async function laadBeurskoersen(){
     const wacht = ms => new Promise(r=> setTimeout(r, ms));
     const resultaten = [];
     for(const s of BEURS_SYMBOLEN){
-      const quoteRes = await fetch(`https://api.twelvedata.com/quote?symbol=${s.symbool}&apikey=${BEURS_API_KEY}`);
-      const data = await quoteRes.json();
+      let data = null;
+      try{
+        const quoteRes = await fetch(`https://api.twelvedata.com/quote?symbol=${s.symbool}&apikey=${BEURS_API_KEY}`);
+        data = await quoteRes.json();
+      }catch(e){ /* één falende aanvraag mag de andere kaarten niet blokkeren */ }
       resultaten.push({ naam: s.naam, data, history: historieData[s.symbool] });
       await wacht(300);
     }
@@ -984,6 +1013,39 @@ async function laadBeurskoersen(){
 }
 laadBeurskoersen(); setInterval(laadBeurskoersen, 20*60*1000);
 
+/* ---------------- BELGISCHE FEESTDAGEN ----------------
+   Algoritmisch berekend (incl. Pasen via het Gregoriaanse
+   paasalgoritme), dus dit werkt automatisch voor elk jaar
+   zonder jaarlijks onderhoud. */
+function paasDatum(jaar){
+  const a = jaar % 19, b = Math.floor(jaar/100), cc = jaar % 100;
+  const d = Math.floor(b/4), e = b % 4, f = Math.floor((b+8)/25);
+  const g = Math.floor((b-f+1)/3), h = (19*a + b - d - g + 15) % 30;
+  const i = Math.floor(cc/4), k = cc % 4;
+  const l = (32 + 2*e + 2*i - h - k) % 7;
+  const m = Math.floor((a + 11*h + 22*l) / 451);
+  const maand = Math.floor((h + l - 7*m + 114) / 31);
+  const dag = ((h + l - 7*m + 114) % 31) + 1;
+  return new Date(jaar, maand-1, dag);
+}
+function belgischeFeestdagen(jaar){
+  const pasen = paasDatum(jaar);
+  const plus = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
+  const key = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return new Set([
+    key(new Date(jaar, 0, 1)),    /* Nieuwjaar */
+    key(plus(pasen, 1)),          /* Paasmaandag */
+    key(new Date(jaar, 4, 1)),    /* Dag van de Arbeid */
+    key(plus(pasen, 39)),         /* O.L.H. Hemelvaart */
+    key(plus(pasen, 50)),         /* Pinkstermaandag */
+    key(new Date(jaar, 6, 21)),   /* Nationale feestdag */
+    key(new Date(jaar, 7, 15)),   /* O.L.V. Hemelvaart */
+    key(new Date(jaar, 10, 1)),   /* Allerheiligen */
+    key(new Date(jaar, 10, 11)),  /* Wapenstilstand */
+    key(new Date(jaar, 11, 25)),  /* Kerstmis */
+  ]);
+}
+
 /* ---------------- VERLOFPAGINA (DAGKALENDER) ----------------
    Toont enkel vakantie [VAK] en ziekte [Z] als gekleurde dagcellen
    per medewerker, over een rollend venster van 4 weken dat start
@@ -1005,6 +1067,13 @@ function renderVerlofPagina(){
     dagen.push(d);
   }
   const eind = dagen[AANTAL_DAGEN-1];
+
+  /* Feestdagen voor de jaren in beeld (venster kan over jaargrens lopen) */
+  const feestdagen = new Set([
+    ...belgischeFeestdagen(start.getFullYear()),
+    ...belgischeFeestdagen(eind.getFullYear())
+  ]);
+  const dagKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
   const typeVan = soort => {
     const m = String(soort).match(/^\[(\w+)\]/);
@@ -1066,9 +1135,10 @@ function renderVerlofPagina(){
   dagen.forEach((d, i)=>{
     const isWeekend = d.getDay()===0 || d.getDay()===6;
     const isVandaag = d.getTime()===vandaag.getTime();
+    const isFeestdag = feestdagen.has(dagKey(d));
     const midX = dagX(i) + celBreedte/2;
     svg += `<text x="${midX}" y="34" class="g-wd">${wkNamen[d.getDay()]}</text>`;
-    svg += `<text x="${midX}" y="50" class="g-dagnr ${isWeekend?'weekend':''} ${isVandaag?'vandaag':''}">${d.getDate()}</text>`;
+    svg += `<text x="${midX}" y="50" class="g-dagnr ${isWeekend?'weekend':''} ${isFeestdag?'feestdag':''} ${isVandaag?'vandaag':''}">${d.getDate()}</text>`;
   });
 
   /* Rijen: naam + dagcellen */
@@ -1077,14 +1147,16 @@ function renderVerlofPagina(){
     svg += `<text x="${naamKolom-12}" y="${y + rijHoogte/2 + 5}" text-anchor="end" class="g-naam">${esc(naam)}</text>`;
     dagen.forEach((d, i)=>{
       const isWeekend = d.getDay()===0 || d.getDay()===6;
-      /* Bepaal of deze persoon deze dag afwezig is (ziekte gaat voor bij overlap) */
+      const isFeestdag = feestdagen.has(dagKey(d));
+      /* Bepaal of deze persoon deze dag afwezig is (ziekte gaat voor bij overlap);
+         een feestdag gaat boven alles: dan is iedereen sowieso vrij. */
       let type = null;
       perPersoon[naam].forEach(v=>{
         if(d >= v.vanD && d <= v.totD){
           if(type !== 'ziek') type = v.type;
         }
       });
-      const klasse = type ? type : (isWeekend ? 'weekend' : '');
+      const klasse = isFeestdag ? 'feestdag' : (type ? type : (isWeekend ? 'weekend' : ''));
       svg += `<rect x="${dagX(i)}" y="${y+5}" width="${celBreedte}" height="${rijHoogte-10}" rx="4" class="g-cel ${klasse}"></rect>`;
     });
   });
@@ -1136,9 +1208,14 @@ function rotatieHerstart(){
 rotatieHerstart();
 
 /* ---------------- AUTOMATISCH HERLADEN ----------------
-   Elke 15 min, maar niet terwijl het configuratiepaneel
-   openstaat (anders verlies je wat je aan het intypen bent). */
-setInterval(()=>{ if(!cfgIsOpen) location.reload(); }, 15*60*1000);
+   Elke 15 min, maar enkel wanneer het hoofddashboard toont
+   (geen abrupte sprong midden in een rotatiepagina) en het
+   configuratiepaneel niet openstaat. */
+setInterval(()=>{
+  if(cfgIsOpen) return;
+  if(rotatieFases[rotatieIndex] !== 'dashboard') return;
+  location.reload();
+}, 15*60*1000);
 </script>
 </body>
 </html>
