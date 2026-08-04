@@ -16,20 +16,39 @@
 const LOCATIE = { naam: "Hoboken", lat: 51.1747, lon: 4.3487 };
 
 /* ============================================================
-   2. BEWERK HIER — AANBESTEDINGEN
-   Klant, werf, datum (JJJJ-MM-DD), uur (UU:MM), PB.
-   Tip: je kan dit ook aanpassen via het ⚙️-icoon op het
-   dashboard zelf, en daar op "Kopieer voor GitHub" klikken.
+   2. BEWERK HIER — LINKS NAAR DE GOOGLE SHEET
+   Dit is nu de plek waar het dashboard zijn gegevens haalt.
+   Iedereen vult de Sheet in; hier hoeft niets meer bij.
+
+   Hoe kom je aan deze links?
+   In de Sheet: Bestand > Delen > Publiceren op internet.
+   Kies per tabblad, zet het formaat op "Door komma's gescheiden
+   waarden (.csv)", klik Publiceren en plak de link hieronder.
+   Doe dat vijf keer, één keer per tabblad.
+
+   Zolang hier PLAK_HIER staat, gebruikt het dashboard gewoon
+   de reservelijsten verderop in dit bestand.
+   ============================================================ */
+const SHEET_URLS = {
+  aanb:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=858766407&single=true&output=csv",
+  verlof: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1655683255&single=true&output=csv",
+  verj:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=911558667&single=true&output=csv",
+  tips:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=242170602&single=true&output=csv",
+  med:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=2141493263&single=true&output=csv",
+};
+
+/* ============================================================
+   3. RESERVELIJSTEN
+   Deze worden enkel getoond als de Sheet niet bereikbaar is
+   (geen internet, Google plat, link vervallen). Zo staat er
+   nooit een leeg scherm. Je hoeft ze niet bij te houden, maar
+   het is geen slecht idee om ze af en toe eens te verversen.
    ============================================================ */
 const AANBESTEDINGEN = [
   { klant: "Prov. Limburg",         werf: "Sporthallen Hasselt", datum: "2026-08-26", uur: "10:00", pb: "afsp." },
   { klant: "Prov. Oost-vlaanderen", werf: "Golf",                datum: "2026-08-31", uur: "12:00", pb: "afsp." },
 ];
 
-/* ============================================================
-   3. BEWERK HIER — VERJAARDAGEN (MM-DD, zonder jaartal)
-   Enkel verjaardagen binnen de komende maand worden getoond.
-   ============================================================ */
 const VERJAARDAGEN = [
   { naam: "Tim",      datum: "01-22" },
   { naam: "Tom",      datum: "02-02" },
@@ -53,25 +72,12 @@ const VERJAARDAGEN = [
   { naam: "Karl",     datum: "12-13" },
 ];
 
-/* ============================================================
-   4. BEWERK HIER — BEDRIJFSMEDEDELINGEN
-   De 3 nieuwste (op datum) worden getoond.
-   ============================================================ */
 const MEDEDELINGEN = [
   { tekst: "Ideeën? Graag! Nathan & Enrique", datum: "2026-07-15" },
 ];
 
 /* ============================================================
-   5. BEWERK HIER — BEURSKOERSEN (rotatiepagina)
-   Maak een gratis account op https://twelvedata.com, kopieer
-   je API-sleutel en plak die hieronder tussen de aanhalingstekens.
-   Zonder geldige sleutel toont het dashboard gewoon een melding
-   in plaats van de koersen.
-
-   Let op: BEL20 en olie zelf zitten op Twelve Data achter een
-   betaald plan. Als proxy gebruiken we hier Amerikaans-genoteerde
-   ETF's die hetzelfde volgen en wél op het gratis plan werken:
-   EWK (volgt Belgische aandelen) en XLE (energiesector/olie).
+   4. BEWERK HIER — BEURSKOERSEN (rotatiepagina)
    ============================================================ */
 const BEURS_API_KEY = "4d1c8fc6d761419981a53e5e9c5112b6";
 const BEURS_SYMBOLEN = [
@@ -82,15 +88,8 @@ const BEURS_SYMBOLEN = [
   { naam: "Olie & Energie (XLE)", symbool: "XLE" },
 ];
 
-/* ============================================================
-   6. BEWERK HIER — VERLOF (aparte rotatiepagina)
-   Naam, van, tot (JJJJ-MM-DD, einddag inbegrepen) en soort.
-   De pagina toont automatisch enkel verlof dat binnen de
-   komende 3 maanden valt (incl. lopend verlof); oudere regels
-   mogen blijven staan, die worden gewoon niet meer getoond.
-   Kopieer nieuwe regels uit Odoo in hetzelfde formaat.
-   ============================================================ */
-const VERLOF = [
+/* Reservelijst verlof — wordt overschreven door de Sheet. */
+let VERLOF = [
   { naam: "Glenn De Cleen", van: "2026-10-05", tot: "2026-10-05", soort: "[VAK] Vakantie (jaarlijks verlof)" },
   { naam: "Els Michiels", van: "2026-09-15", tot: "2026-09-30", soort: "[VAK] Vakantie (jaarlijks verlof)" },
   { naam: "Els Michiels", van: "2026-09-14", tot: "2026-09-14", soort: "[VBF] Vervangingsdag feestdag" },
@@ -101,35 +100,12 @@ const VERLOF = [
   { naam: "Glenn De Cleen", van: "2026-08-17", tot: "2026-08-17", soort: "[BF] Betaalde feestdag" },
   { naam: "Mohamed El Koubai", van: "2026-08-10", tot: "2026-08-14", soort: "[VAK] Vakantie (jaarlijks verlof)" },
   { naam: "Samir Ghadari", van: "2026-08-03", tot: "2026-08-03", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Abdelkader Liaoui", van: "2026-07-30", tot: "2026-07-31", soort: "[OnAF] Onbetaalde afwezigheid" },
-  { naam: "Ali Sharif", van: "2026-07-27", tot: "2026-08-07", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
-  { naam: "Ali Abbas", van: "2026-07-27", tot: "2026-07-31", soort: "[OnAF] Onbetaalde afwezigheid" },
-  { naam: "Ali Abbas", van: "2026-07-22", tot: "2026-07-24", soort: "[OnAF] Onbetaalde afwezigheid" },
-  { naam: "Nathan Lefeber", van: "2026-07-22", tot: "2026-07-22", soort: "[RECB] Betaalde recuperatie overuren" },
-  { naam: "Glenn De Cleen", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Eddy Snauwaert", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Els Michiels", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Nathan Lefeber", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Chris Severeyns", van: "2026-07-20", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Tom Van den Bergh", van: "2026-07-13", tot: "2026-08-02", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
-  { naam: "Ali Abbas", van: "2026-07-13", tot: "2026-07-20", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Robert Garcia", van: "2026-07-13", tot: "2026-07-24", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Abdelkader Liaoui", van: "2026-07-13", tot: "2026-07-29", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Samir Ghadari", van: "2026-07-09", tot: "2026-07-10", soort: "[Z] Ziekte" },
-  { naam: "Jaafar Al-Rifaie", van: "2026-07-03", tot: "2026-07-09", soort: "[VAK] Vakantie (jaarlijks verlof)" },
-  { naam: "Tim Reyntjens", van: "2026-07-03", tot: "2026-07-20", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
-  { naam: "Karl Creemers", van: "2026-06-29", tot: "2026-07-17", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
-  { naam: "Tim Reyntjens", van: "2026-06-25", tot: "2026-07-23", soort: "[TOA] Gerechtvaardigde onbetaalde afwezigheid" },
 ];
 
 /* ============================================================
-   7. BEWERK HIER — WEEKCITAAT / DAGTIP
-   Elke dag verschijnt automatisch de volgende tip in de lijst
-   (op basis van de datum, dus geen omkijken naar nodig). Voeg
-   gerust bij of verwijder — hoe meer erin staan, hoe langer het
-   duurt vóór ze herhalen.
+   5. RESERVELIJST TIPS — wordt overschreven door de Sheet.
    ============================================================ */
-const DAGTIPS = [
+let DAGTIPS = [
   "Koffiepauze-weetje: LED-verlichting verbruikt tot 80% minder energie dan klassieke gloeilampen.",
   "Een tevreden klant vertelt het aan 3 anderen — een ontevreden klant aan 10. Extra reden om altijd netjes op te ruimen na een werf.",
   "Veiligheid eerst: check altijd of de stroom is afgesloten vóór je aan een installatie werkt.",
@@ -162,8 +138,6 @@ function dagtipVanVandaag(){
     --shadow: 0 1px 2px rgba(62,61,68,0.05), 0 6px 20px rgba(62,61,68,0.06);
   }
 
-  /* Nachtmodus: schakelt automatisch in tussen 19u en 7u,
-     rustiger voor de ogen op een donker kantoor. */
   body.nacht{
     --bg:#22242b;
     --card:#2c2f37;
@@ -188,7 +162,6 @@ function dagtipVanVandaag(){
   }
   @keyframes fadein{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
 
-  /* ---------- HEADER ---------- */
   header{ display:flex; align-items:center; justify-content:space-between; }
   .brand{ display:flex; align-items:center; gap:18px; }
   .brand img{ height:52px; width:auto; display:block; }
@@ -215,7 +188,6 @@ function dagtipVanVandaag(){
     background:linear-gradient(90deg, var(--red) 0%, var(--red) 18%, var(--card-border) 18%);
   }
 
-  /* ---------- MEDEDELINGEN ---------- */
   .mededelingen{
     display:flex; align-items:stretch;
     background:var(--card); border:1px solid var(--card-border);
@@ -238,7 +210,6 @@ function dagtipVanVandaag(){
   .mededeling-item .datum{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); }
   .mededeling-sep{ color:var(--card-border); }
 
-  /* ---------- MAIN GRID ---------- */
   main{ display:grid; grid-template-columns: 1fr 380px; gap:28px; min-height:0; }
 
   .card{
@@ -261,7 +232,6 @@ function dagtipVanVandaag(){
     background:rgba(188,23,2,0.08); padding:3px 10px; border-radius:20px;
   }
 
-  /* ---------- AANBESTEDINGEN ---------- */
   .tbl-wrap{ flex:1; overflow:auto; padding:0 6px 6px 6px; }
   table{ width:100%; border-collapse:collapse; }
   thead th{
@@ -286,7 +256,6 @@ function dagtipVanVandaag(){
     letter-spacing:0.06em; text-transform:uppercase; color:var(--red); margin-top:4px;
   }
 
-  /* ---------- SIDEBAR ---------- */
   .sidebar{ display:flex; flex-direction:column; gap:20px; min-height:0; }
   .weer-body{ padding:16px 26px 18px 26px; flex:1; display:flex; flex-direction:column; }
   .weer-nu{ display:flex; align-items:center; gap:16px; }
@@ -312,7 +281,6 @@ function dagtipVanVandaag(){
   .verj-item.vandaag .verj-datum{ color:var(--pink); font-weight:600; }
   .verj-leeg{ padding:16px 26px; font-size:13px; color:var(--ink-soft); }
 
-  /* ---------- CONFIG ---------- */
   .cfg-btn{
     position:fixed; right:22px; bottom:22px; z-index:40;
     width:44px; height:44px; border-radius:50%;
@@ -338,52 +306,23 @@ function dagtipVanVandaag(){
   }
   .cfg-title{ font-family:'Manrope',sans-serif; font-weight:800; font-size:18px; }
   .cfg-close{ border:none; background:none; font-size:22px; cursor:pointer; color:var(--ink-soft); }
-  .cfg-tabs{ display:flex; gap:6px; padding:14px 24px 0 24px; flex-wrap:wrap; }
-  .cfg-tab{
-    border:1px solid var(--card-border); background:var(--bg); border-radius:10px 10px 0 0;
-    padding:9px 16px; font-family:'Inter',sans-serif; font-weight:600; font-size:13px;
-    cursor:pointer; color:var(--ink-soft); border-bottom:none;
-  }
-  .cfg-tab.active{ background:var(--card); color:var(--red); }
-  .cfg-body{ padding:18px 24px; overflow:auto; flex:1; border-top:1px solid var(--card-border); }
+  .cfg-body{ padding:18px 24px; overflow:auto; flex:1; }
   .cfg-note{
-    font-size:12.5px; color:var(--ink-soft); background:var(--bg);
-    border-radius:10px; padding:10px 14px; margin-bottom:16px; line-height:1.5;
+    font-size:13.5px; color:var(--ink-soft); background:var(--bg);
+    border-radius:10px; padding:14px 18px; margin-bottom:16px; line-height:1.6;
   }
   .cfg-note b{ color:var(--ink); }
-  .cfg-row{
-    display:flex; gap:8px; align-items:center; padding:8px 0;
-    border-bottom:1px solid var(--card-border); font-size:13.5px;
+  .cfg-link{
+    display:inline-block; margin-top:6px; background:var(--red); color:#fff;
+    text-decoration:none; border-radius:8px; padding:9px 18px;
+    font-weight:700; font-size:13px;
   }
-  .cfg-row .grow{ flex:1; }
-  .cfg-row .mono{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft); }
-  .cfg-del{
-    border:1px solid var(--card-border); background:none; border-radius:8px;
-    padding:4px 10px; cursor:pointer; color:var(--red); font-size:12px; font-weight:600;
+  .cfg-rij{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid var(--card-border); font-size:13.5px;
   }
-  .cfg-form{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-  .cfg-form input{
-    border:1px solid var(--card-border); border-radius:8px; padding:8px 10px;
-    font-family:'Inter',sans-serif; font-size:13px; flex:1; min-width:110px;
-  }
-  .cfg-form input.wide{ flex:2; min-width:200px; }
-  .cfg-add{
-    border:none; background:var(--red); color:#fff; border-radius:8px;
-    padding:8px 16px; font-weight:700; font-size:13px; cursor:pointer;
-  }
-  .cfg-foot{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    padding:14px 24px; border-top:1px solid var(--card-border); background:var(--bg);
-  }
-  .cfg-foot .hint{ font-size:11.5px; color:var(--ink-soft); }
-  .cfg-actions{ display:flex; gap:8px; }
-  .cfg-copy, .cfg-reset{
-    border:1px solid var(--card-border); background:var(--card); border-radius:8px;
-    padding:8px 14px; font-weight:600; font-size:12.5px; cursor:pointer;
-  }
-  .cfg-copy{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .cfg-rij .mono{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft); }
 
-  /* ---------- ROTATIEPAGINA (BEURSKOERSEN) ---------- */
   .rotatie-overlay{
     position:fixed; inset:0; background:var(--bg);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -453,7 +392,6 @@ function dagtipVanVandaag(){
     font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
   }
 
-  /* ---------- VERLOFPAGINA (DAGKALENDER) ---------- */
   .verlof-legende{
     display:flex; gap:26px; margin:-14px 0 18px 0;
     font-size:13.5px; color:var(--ink-soft); align-items:center;
@@ -500,7 +438,6 @@ function dagtipVanVandaag(){
   }
   .verlof-leeg{ padding:26px; font-size:15px; color:var(--ink-soft); text-align:center; }
 
-  /* ---------- ROTATIE-INDICATOR ---------- */
   .rotatie-dots{
     position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
     display:flex; gap:10px; z-index:35;
@@ -580,22 +517,7 @@ function dagtipVanVandaag(){
       <div class="cfg-title">Gegevens beheren</div>
       <button class="cfg-close" onclick="cfgClose()">✕</button>
     </div>
-    <div class="cfg-tabs">
-      <button class="cfg-tab active" data-tab="aanb" onclick="cfgTab('aanb')">Aanbestedingen</button>
-      <button class="cfg-tab" data-tab="verj" onclick="cfgTab('verj')">Verjaardagen</button>
-      <button class="cfg-tab" data-tab="med" onclick="cfgTab('med')">Mededelingen</button>
-    </div>
     <div class="cfg-body" id="cfg-body"></div>
-    <div class="cfg-foot">
-      <div class="hint">
-        Wijzigingen worden meteen getoond en onthouden <b>op dit toestel</b>.<br>
-        Om ze op álle schermen te tonen: klik "Kopieer voor GitHub" en plak het blok in index.html op GitHub.
-      </div>
-      <div class="cfg-actions">
-        <button class="cfg-reset" onclick="cfgReset()">Terug naar GitHub-versie</button>
-        <button class="cfg-copy" onclick="cfgCopy(this)">Kopieer voor GitHub</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -628,54 +550,174 @@ function dagtipVanVandaag(){
 
 <script>
 /* ---------------- DATALAAG ----------------
-   Standaardwaarden komen uit de blokken bovenaan (GitHub-versie).
-   Lokale wijzigingen via het ⚙️-paneel worden in deze browser
-   bewaard (localStorage) en gaan vóór op de standaardwaarden. */
-const STORE_KEY = 'varda-dashboard-data-v3';
+   De Google Sheet is de bron. De lijsten bovenaan dit bestand
+   dienen enkel als terugval wanneer de Sheet onbereikbaar is. */
 let DATA = { aanb: AANBESTEDINGEN, verj: VERJAARDAGEN, med: MEDEDELINGEN };
-let lokaleDataActief = false;
-try{
-  const saved = localStorage.getItem(STORE_KEY);
-  if(saved){
-    const p = JSON.parse(saved);
-    if(p.aanb && p.verj && p.med){ DATA = p; lokaleDataActief = true; }
-  }
-}catch(e){ /* localStorage niet beschikbaar: gewoon standaardwaarden gebruiken */ }
 
-/* Klein zichtbaar labeltje zodat een afwijking t.o.v. GitHub nooit
-   onopgemerkt blijft (dit heeft eerder al eens voor verwarring gezorgd). */
-function toonLokaleDataLabel(){
-  let el = document.getElementById('lokale-data-label');
-  if(!lokaleDataActief){ if(el) el.remove(); return; }
+/* Klein labeltje linksonder dat toont waar de gegevens vandaan
+   komen. Bij een storing zie je zo meteen dat het scherm op de
+   reservelijst draait, in plaats van dat het stil verouderd. */
+let sheetStatus = 'laden'; /* laden | ok | uit | fout */
+let laatsteVerversing = null;
+
+function toonBronLabel(){
+  let el = document.getElementById('bron-label');
+  if(sheetStatus === 'ok'){ if(el) el.remove(); return; }
   if(!el){
     el = document.createElement('div');
-    el.id = 'lokale-data-label';
+    el.id = 'bron-label';
     el.style.cssText = 'position:fixed;left:22px;bottom:22px;z-index:40;font-family:monospace;font-size:11px;padding:6px 12px;border-radius:8px;background:rgba(188,23,2,0.10);color:#bc1702;border:1px solid rgba(188,23,2,0.3);';
-    el.textContent = '⚠ lokale gegevens actief (wijkt mogelijk af van GitHub)';
     document.body.appendChild(el);
   }
+  if(sheetStatus === 'uit')  el.textContent = '⚙ Sheet-links nog niet ingevuld — reservelijst actief';
+  if(sheetStatus === 'fout') el.textContent = '⚠ Sheet niet bereikbaar — reservelijst actief';
+  if(sheetStatus === 'laden') el.textContent = '… gegevens laden';
 }
 
-function saveData(){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }catch(e){}
-  lokaleDataActief = true;
-  toonLokaleDataLabel();
+/* ---------------- CSV UIT DE SHEET ---------------- */
+function parseCSV(tekst){
+  const rijen = [];
+  let rij = [], veld = '', inQuote = false;
+  tekst = String(tekst).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  for(let i = 0; i < tekst.length; i++){
+    const c = tekst[i];
+    if(inQuote){
+      if(c === '"'){
+        if(tekst[i+1] === '"'){ veld += '"'; i++; }
+        else inQuote = false;
+      } else veld += c;
+    } else {
+      if(c === '"') inQuote = true;
+      else if(c === ','){ rij.push(veld); veld = ''; }
+      else if(c === '\n'){ rij.push(veld); rijen.push(rij); rij = []; veld = ''; }
+      else veld += c;
+    }
+  }
+  if(veld !== '' || rij.length){ rij.push(veld); rijen.push(rij); }
+  return rijen;
+}
+
+function csvNaarObjecten(tekst){
+  const rijen = parseCSV(tekst).filter(r => r.some(v => String(v).trim() !== ''));
+  if(rijen.length < 2) return [];
+  const koppen = rijen[0].map(k => String(k).trim().toLowerCase());
+  return rijen.slice(1).map(r => {
+    const o = {};
+    koppen.forEach((k, i) => { o[k] = String(r[i] === undefined ? '' : r[i]).trim(); });
+    return o;
+  });
+}
+
+/* Google kan een datum alsnog als 4/08/2026 exporteren; alles
+   wordt hier teruggebracht naar JJJJ-MM-DD. */
+function normDatum(s){
+  const t = String(s || '').trim();
+  if(!t) return '';
+  if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(t)){
+    const [j, m, d] = t.split('-');
+    return `${j}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  const m1 = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(m1) return `${m1[3]}-${String(m1[2]).padStart(2,'0')}-${String(m1[1]).padStart(2,'0')}`;
+  return t;
+}
+function normMMDD(s){
+  const t = String(s || '').trim();
+  if(!t) return '';
+  if(/^\d{1,2}-\d{1,2}$/.test(t)){
+    const [m, d] = t.split('-');
+    return `${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+  const vol = normDatum(t);
+  const mv = vol.match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if(mv) return `${mv[1]}-${mv[2]}`;
+  const m2 = t.match(/^(\d{1,2})[\/\-.](\d{1,2})$/);
+  if(m2) return `${String(m2[2]).padStart(2,'0')}-${String(m2[1]).padStart(2,'0')}`;
+  return t;
+}
+function normUur(s){
+  const t = String(s || '').trim();
+  const m = t.match(/^(\d{1,2}):(\d{2})/);
+  return m ? `${String(m[1]).padStart(2,'0')}:${m[2]}` : t;
+}
+
+async function haalTabblad(url){
+  const res = await fetch(url, { cache: 'no-store' });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  return csvNaarObjecten(await res.text());
+}
+
+async function laadUitSheet(){
+  const urls = (typeof SHEET_URLS === 'object' && SHEET_URLS) ? SHEET_URLS : {};
+  const bruikbaar = u => u && /^https?:\/\//.test(u) && !/PLAK_HIER/.test(u);
+  if(!Object.values(urls).some(bruikbaar)){
+    sheetStatus = 'uit'; toonBronLabel(); return;
+  }
+
+  try{
+    const [aanb, verlof, verj, tips, med] = await Promise.all([
+      bruikbaar(urls.aanb)   ? haalTabblad(urls.aanb)   : Promise.resolve(null),
+      bruikbaar(urls.verlof) ? haalTabblad(urls.verlof) : Promise.resolve(null),
+      bruikbaar(urls.verj)   ? haalTabblad(urls.verj)   : Promise.resolve(null),
+      bruikbaar(urls.tips)   ? haalTabblad(urls.tips)   : Promise.resolve(null),
+      bruikbaar(urls.med)    ? haalTabblad(urls.med)    : Promise.resolve(null),
+    ]);
+
+    /* Een leeg tabblad mag bestaande gegevens niet wissen. */
+    if(aanb && aanb.length){
+      const r = aanb.map(x => ({
+        klant: x.klant || '', werf: x.werf || '',
+        datum: normDatum(x.datum), uur: normUur(x.uur), pb: x.pb || ''
+      })).filter(x => x.klant && x.datum);
+      if(r.length) DATA.aanb = r;
+    }
+    if(verlof && verlof.length){
+      const r = verlof.map(x => ({
+        naam: x.naam || '', van: normDatum(x.van),
+        tot: normDatum(x.tot), soort: x.soort || ''
+      })).filter(x => x.naam && x.van && x.tot);
+      if(r.length) VERLOF = r;
+    }
+    if(verj && verj.length){
+      const r = verj.map(x => ({
+        naam: x.naam || '', datum: normMMDD(x.datum)
+      })).filter(x => x.naam && /^\d{2}-\d{2}$/.test(x.datum));
+      if(r.length) DATA.verj = r;
+    }
+    if(tips && tips.length){
+      const r = tips.map(x => x.tekst || '').filter(t => t !== '');
+      if(r.length) DAGTIPS = r;
+    }
+    if(med && med.length){
+      const r = med.map(x => ({
+        tekst: x.tekst || '', datum: normDatum(x.datum)
+      })).filter(x => x.tekst && x.datum);
+      if(r.length) DATA.med = r;
+    }
+
+    sheetStatus = 'ok';
+    laatsteVerversing = new Date();
+  }catch(e){
+    sheetStatus = 'fout';
+    console.warn('Sheet niet bereikbaar, reservelijst blijft actief:', e);
+  }
+
+  toonBronLabel();
   renderAll();
-  cfgRender();
+  renderVerlofPagina();
+  toonDagtip();
 }
 
 /* ---------------- KLOK ---------------- */
 function updateClock(){
   const now = new Date();
-  const sep = now.getSeconds() % 2 === 0 ? ':' : '\u2009 \u2009'; // knipperende dubbelepunt
+  const sep = now.getSeconds() % 2 === 0 ? ':' : '\u2009 \u2009';
   document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2,'0')}${sep}${String(now.getMinutes()).padStart(2,'0')}`;
   document.getElementById('date').textContent = now.toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 }
 updateClock(); setInterval(updateClock, 1000);
 
-/* ---------------- DAG/NACHT-THEMA ----------------
-   Tussen 19u 's avonds en 7u 's ochtends schakelt het dashboard
-   automatisch naar een donker thema, rustiger op een donker kantoor. */
+/* ---------------- DAG/NACHT-THEMA ---------------- */
 function themaUpdate(){
   const uur = new Date().getHours();
   document.body.classList.toggle('nacht', uur >= 19 || uur < 7);
@@ -741,8 +783,6 @@ function renderMededelingen(){
 }
 
 function renderAll(){ renderAanbestedingen(); renderVerjaardagen(); renderMededelingen(); }
-renderAll();
-toonLokaleDataLabel();
 
 /* ---------------- WEER (Open-Meteo) ---------------- */
 const WMO = {
@@ -784,120 +824,36 @@ async function laadWeer(){
 }
 laadWeer(); setInterval(laadWeer, 30*60*1000);
 
-/* ---------------- CONFIG PANEEL ---------------- */
-let cfgActive = 'aanb';
+/* ---------------- INFOPANEEL ----------------
+   Het beheren van gegevens gebeurt voortaan in de Sheet.
+   Dit paneel wijst enkel nog de weg. */
 let cfgIsOpen = false;
-
 function cfgOpen(){ cfgIsOpen = true; document.getElementById('cfg-overlay').classList.add('open'); cfgRender(); }
 function cfgClose(){ cfgIsOpen = false; document.getElementById('cfg-overlay').classList.remove('open'); }
-function cfgTab(t){
-  cfgActive = t;
-  document.querySelectorAll('.cfg-tab').forEach(b=> b.classList.toggle('active', b.dataset.tab === t));
-  cfgRender();
-}
 
 function cfgRender(){
-  const body = document.getElementById('cfg-body');
-  if(cfgActive === 'aanb'){
-    body.innerHTML = `
-      <div class="cfg-note">Nieuwe aanbesteding toevoegen: vul de velden in en klik <b>Toevoegen</b>. Datum als <b>JJJJ-MM-DD</b>, uur als <b>UU:MM</b>.</div>
-      ${DATA.aanb.map((r,i)=>`
-        <div class="cfg-row">
-          <span class="grow"><b>${esc(r.klant)}</b> — ${esc(r.werf)}</span>
-          <span class="mono">${esc(r.datum)} ${esc(r.uur)} · ${esc(r.pb)}</span>
-          <button class="cfg-del" onclick="cfgDel('aanb',${i})">Verwijder</button>
-        </div>`).join('')}
-      <div class="cfg-form">
-        <input id="f-klant" class="wide" placeholder="Klant">
-        <input id="f-werf" class="wide" placeholder="Werf">
-        <input id="f-datum" placeholder="JJJJ-MM-DD">
-        <input id="f-uur" placeholder="UU:MM" value="12:00">
-        <input id="f-pb" placeholder="PB-nummer">
-        <button class="cfg-add" onclick="cfgAddAanb()">Toevoegen</button>
-      </div>`;
-  } else if(cfgActive === 'verj'){
-    body.innerHTML = `
-      <div class="cfg-note">Datum als <b>MM-DD</b> (zonder jaartal), bv. 03-28 voor 28 maart. Het dashboard toont enkel verjaardagen binnen de komende maand, maar hier zie je de volledige lijst.</div>
-      ${DATA.verj.map((v,i)=>`
-        <div class="cfg-row">
-          <span class="grow"><b>${esc(v.naam)}</b></span>
-          <span class="mono">${esc(v.datum)}</span>
-          <button class="cfg-del" onclick="cfgDel('verj',${i})">Verwijder</button>
-        </div>`).join('')}
-      <div class="cfg-form">
-        <input id="f-naam" class="wide" placeholder="Naam">
-        <input id="f-vdatum" placeholder="MM-DD">
-        <button class="cfg-add" onclick="cfgAddVerj()">Toevoegen</button>
-      </div>`;
-  } else {
-    body.innerHTML = `
-      <div class="cfg-note">De <b>3 nieuwste</b> mededelingen (op datum) verschijnen op het dashboard. Datum als <b>JJJJ-MM-DD</b>.</div>
-      ${DATA.med.map((m,i)=>`
-        <div class="cfg-row">
-          <span class="grow">${esc(m.tekst)}</span>
-          <span class="mono">${esc(m.datum)}</span>
-          <button class="cfg-del" onclick="cfgDel('med',${i})">Verwijder</button>
-        </div>`).join('')}
-      <div class="cfg-form">
-        <input id="f-tekst" class="wide" placeholder="Mededeling">
-        <input id="f-mdatum" placeholder="JJJJ-MM-DD">
-        <button class="cfg-add" onclick="cfgAddMed()">Toevoegen</button>
-      </div>`;
-  }
-}
-
-function cfgDel(lijst, i){ DATA[lijst].splice(i,1); saveData(); }
-
-function cfgAddAanb(){
-  const g = id => document.getElementById(id).value.trim();
-  const klant=g('f-klant'), werf=g('f-werf'), datum=g('f-datum'), uur=(g('f-uur')||'12:00'), pb=g('f-pb');
-  if(!klant || !datum){ alert('Vul minstens klant en datum in.'); return; }
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(datum)){ alert('Datum moet JJJJ-MM-DD zijn, bv. 2026-09-10.'); return; }
-  DATA.aanb.push({ klant, werf, datum, uur, pb });
-  saveData();
-}
-function cfgAddVerj(){
-  const naam = document.getElementById('f-naam').value.trim();
-  const datum = document.getElementById('f-vdatum').value.trim();
-  if(!naam || !/^\d{2}-\d{2}$/.test(datum)){ alert('Vul een naam in en datum als MM-DD, bv. 03-28.'); return; }
-  DATA.verj.push({ naam, datum });
-  saveData();
-}
-function cfgAddMed(){
-  const tekst = document.getElementById('f-tekst').value.trim();
-  const datum = document.getElementById('f-mdatum').value.trim();
-  if(!tekst || !/^\d{4}-\d{2}-\d{2}$/.test(datum)){ alert('Vul een tekst in en datum als JJJJ-MM-DD.'); return; }
-  DATA.med.push({ tekst, datum });
-  saveData();
-}
-function cfgReset(){
-  if(!confirm('Lokale wijzigingen op dit toestel wissen en terugkeren naar de GitHub-versie?')) return;
-  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
-  DATA = { aanb: AANBESTEDINGEN, verj: VERJAARDAGEN, med: MEDEDELINGEN };
-  lokaleDataActief = false;
-  toonLokaleDataLabel();
-  renderAll(); cfgRender();
-}
-
-function cfgCopy(btn){
-  const q = s => `"${String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`;
-  const blok =
-`const AANBESTEDINGEN = [
-${DATA.aanb.map(r=>`  { klant: ${q(r.klant)}, werf: ${q(r.werf)}, datum: ${q(r.datum)}, uur: ${q(r.uur)}, pb: ${q(r.pb)} },`).join('\n')}
-];
-
-const VERJAARDAGEN = [
-${DATA.verj.map(v=>`  { naam: ${q(v.naam)}, datum: ${q(v.datum)} },`).join('\n')}
-];
-
-const MEDEDELINGEN = [
-${DATA.med.map(m=>`  { tekst: ${q(m.tekst)}, datum: ${q(m.datum)} },`).join('\n')}
-];`;
-  const done = ()=>{ btn.textContent = 'Gekopieerd! ✓'; setTimeout(()=> btn.textContent = 'Kopieer voor GitHub', 2500); };
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(blok).then(done).catch(()=> promptFallback(blok));
-  } else promptFallback(blok);
-  function promptFallback(t){ window.prompt('Kopieer dit blok (Ctrl+C) en plak het in index.html op GitHub:', t); }
+  const bron = { ok:'Google Sheet', uit:'reservelijst (links nog niet ingevuld)', fout:'reservelijst (Sheet onbereikbaar)', laden:'aan het laden' }[sheetStatus];
+  const tijd = laatsteVerversing ? laatsteVerversing.toLocaleTimeString('nl-BE', {hour:'2-digit', minute:'2-digit'}) : '—';
+  const link = (SHEET_URLS.aanb || '').replace(/\/pub\?.*$/, '');
+  document.getElementById('cfg-body').innerHTML = `
+    <div class="cfg-note">
+      Alle gegevens worden beheerd in de <b>gedeelde Google Sheet</b>.
+      Wijzigingen daar verschijnen hier automatisch, doorgaans binnen een
+      kwartier. Je hoeft niets op te slaan of te publiceren.
+    </div>
+    <div class="cfg-rij"><span>Huidige bron</span><span class="mono">${esc(bron)}</span></div>
+    <div class="cfg-rij"><span>Laatst opgehaald</span><span class="mono">${esc(tijd)}</span></div>
+    <div class="cfg-rij"><span>Aanbestedingen</span><span class="mono">${DATA.aanb.length} rijen</span></div>
+    <div class="cfg-rij"><span>Verlofregels</span><span class="mono">${VERLOF.length} rijen</span></div>
+    <div class="cfg-rij"><span>Verjaardagen</span><span class="mono">${DATA.verj.length} rijen</span></div>
+    <div class="cfg-rij"><span>Tips</span><span class="mono">${DAGTIPS.length} rijen</span></div>
+    <div class="cfg-rij"><span>Mededelingen</span><span class="mono">${DATA.med.length} rijen</span></div>
+    <div class="cfg-note" style="margin-top:18px;">
+      Klopt er iets niet? Controleer in de Sheet of de kolomkoppen op rij 1
+      nog juist staan en of de datums als <b>JJJJ-MM-DD</b> zijn ingevuld.
+      <br>
+      <a class="cfg-link" href="#" onclick="laadUitSheet(); return false;">Nu opnieuw ophalen</a>
+    </div>`;
 }
 
 /* ---------------- BEURSKOERSEN ---------------- */
@@ -939,9 +895,6 @@ function maakSparkline(closes, dates, omhoog){
 const HISTORIE_CACHE_KEY = 'varda-beurs-historie-v1';
 
 async function haalHistorieOp(){
-  /* Geeft de gecachete geschiedenis van vandaag terug indien aanwezig,
-     anders wordt ze 1x per dag opgehaald (5 aanvragen, ruim onder de
-     limiet van 8/minuut) en lokaal bewaard voor de rest van de dag. */
   const vandaag = new Date().toISOString().slice(0,10);
   try{
     const saved = localStorage.getItem(HISTORIE_CACHE_KEY);
@@ -967,7 +920,7 @@ async function haalHistorieOp(){
 async function laadBeurskoersen(){
   const grid = document.getElementById('beurs-grid');
   if(!BEURS_API_KEY || BEURS_API_KEY === "JOUW_TWELVEDATA_API_KEY"){
-    grid.innerHTML = `<div class="beurs-leeg">Nog geen Twelve Data API-sleutel ingevuld. Maak een gratis account op twelvedata.com en vul de sleutel in bij "BEURS_API_KEY" bovenaan de code.</div>`;
+    grid.innerHTML = `<div class="beurs-leeg">Nog geen Twelve Data API-sleutel ingevuld.</div>`;
     return;
   }
   try{
@@ -979,7 +932,7 @@ async function laadBeurskoersen(){
       try{
         const quoteRes = await fetch(`https://api.twelvedata.com/quote?symbol=${s.symbool}&apikey=${BEURS_API_KEY}`);
         data = await quoteRes.json();
-      }catch(e){ /* één falende aanvraag mag de andere kaarten niet blokkeren */ }
+      }catch(e){}
       resultaten.push({ naam: s.naam, data, history: historieData[s.symbool] });
       await wacht(300);
     }
@@ -1009,15 +962,12 @@ async function laadBeurskoersen(){
       </div>`;
     }).join('');
   }catch(e){
-    grid.innerHTML = `<div class="beurs-leeg">Koersen konden niet geladen worden. (In de Claude-preview is dit normaal; online werkt het wel, mits een geldige API-sleutel.)</div>`;
+    grid.innerHTML = `<div class="beurs-leeg">Koersen konden niet geladen worden.</div>`;
   }
 }
 laadBeurskoersen(); setInterval(laadBeurskoersen, 20*60*1000);
 
-/* ---------------- BELGISCHE FEESTDAGEN ----------------
-   Algoritmisch berekend (incl. Pasen via het Gregoriaanse
-   paasalgoritme), dus dit werkt automatisch voor elk jaar
-   zonder jaarlijks onderhoud. */
+/* ---------------- BELGISCHE FEESTDAGEN ---------------- */
 function paasDatum(jaar){
   const a = jaar % 19, b = Math.floor(jaar/100), cc = jaar % 100;
   const d = Math.floor(b/4), e = b % 4, f = Math.floor((b+8)/25);
@@ -1034,30 +984,25 @@ function belgischeFeestdagen(jaar){
   const plus = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
   const key = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   return new Set([
-    key(new Date(jaar, 0, 1)),    /* Nieuwjaar */
-    key(plus(pasen, 1)),          /* Paasmaandag */
-    key(new Date(jaar, 4, 1)),    /* Dag van de Arbeid */
-    key(plus(pasen, 39)),         /* O.L.H. Hemelvaart */
-    key(plus(pasen, 50)),         /* Pinkstermaandag */
-    key(new Date(jaar, 6, 21)),   /* Nationale feestdag */
-    key(new Date(jaar, 7, 15)),   /* O.L.V. Hemelvaart */
-    key(new Date(jaar, 10, 1)),   /* Allerheiligen */
-    key(new Date(jaar, 10, 11)),  /* Wapenstilstand */
-    key(new Date(jaar, 11, 25)),  /* Kerstmis */
+    key(new Date(jaar, 0, 1)),
+    key(plus(pasen, 1)),
+    key(new Date(jaar, 4, 1)),
+    key(plus(pasen, 39)),
+    key(plus(pasen, 50)),
+    key(new Date(jaar, 6, 21)),
+    key(new Date(jaar, 7, 15)),
+    key(new Date(jaar, 10, 1)),
+    key(new Date(jaar, 10, 11)),
+    key(new Date(jaar, 11, 25)),
   ]);
 }
 
-/* ---------------- VERLOFPAGINA (DAGKALENDER) ----------------
-   Toont enkel vakantie [VAK] en ziekte [Z] als gekleurde dagcellen
-   per medewerker, over een rollend venster van 4 weken dat start
-   op maandag van de huidige week. Zodra een week voorbij is,
-   schuift het venster vanzelf op naar de volgende. */
+/* ---------------- VERLOFPAGINA (DAGKALENDER) ---------------- */
 function renderVerlofPagina(){
   const wrap = document.getElementById('gantt-wrap');
   const nu = new Date();
   const vandaag = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate());
-  /* Start op maandag van de huidige week */
-  const dagVanWeek = (vandaag.getDay() + 6) % 7; /* ma=0 ... zo=6 */
+  const dagVanWeek = (vandaag.getDay() + 6) % 7;
   const start = new Date(vandaag); start.setDate(start.getDate() - dagVanWeek);
   const AANTAL_DAGEN = 28;
   const msDag = 24*60*60*1000;
@@ -1069,7 +1014,6 @@ function renderVerlofPagina(){
   }
   const eind = dagen[AANTAL_DAGEN-1];
 
-  /* Feestdagen voor de jaren in beeld (venster kan over jaargrens lopen) */
   const feestdagen = new Set([
     ...belgischeFeestdagen(start.getFullYear()),
     ...belgischeFeestdagen(eind.getFullYear())
@@ -1079,15 +1023,10 @@ function renderVerlofPagina(){
   const typeVan = soort => {
     const m = String(soort).match(/^\[(\w+)\]/);
     const code = m ? m[1].toUpperCase() : '';
-    /* Ziekte apart (rood); ál de rest (VAK, TOA, OnAF, BF, RECB, ...)
-       telt gewoon als "niet aanwezig" en wordt als vakantie (teal) getoond. */
     if(code === 'Z') return 'ziek';
     return 'vak';
   };
 
-  /* Datums als LOKALE datums inlezen (new Date("JJJJ-MM-DD") zou
-     middernacht UTC geven, waardoor de startdag net buiten de
-     vergelijking valt en niet gekleurd wordt). */
   const lokaleDatum = s => {
     const [jj, mm, dd] = String(s).split('-').map(Number);
     return new Date(jj, mm-1, dd);
@@ -1095,7 +1034,7 @@ function renderVerlofPagina(){
 
   const relevant = VERLOF
     .map(v=> ({ naam: v.naam, type: typeVan(v.soort), vanD: lokaleDatum(v.van), totD: lokaleDatum(v.tot) }))
-    .filter(v=> v.type && v.totD >= start && v.vanD <= eind);
+    .filter(v=> v.type && !isNaN(v.vanD) && !isNaN(v.totD) && v.totD >= start && v.vanD <= eind);
 
   if(relevant.length === 0){
     wrap.innerHTML = `<div class="verlof-leeg">Geen vakantie of ziekte gepland in de komende 4 weken.</div>`;
@@ -1113,7 +1052,6 @@ function renderVerlofPagina(){
     return eersteA - eersteB;
   });
 
-  /* Afmetingen */
   const naamKolom = 180, padRechts = 8, padBoven = 58, rijHoogte = 38, padOnder = 8;
   const w = 1480;
   const celGap = 3;
@@ -1124,7 +1062,6 @@ function renderVerlofPagina(){
   const wkNamen = ['zo','ma','di','wo','do','vr','za'];
   let svg = '';
 
-  /* Maandlabels boven de dagen waar een maand begint (of bij de eerste dag) */
   dagen.forEach((d, i)=>{
     if(i === 0 || d.getDate() === 1){
       const maandNaam = d.toLocaleDateString('nl-BE', { month:'long' });
@@ -1132,7 +1069,6 @@ function renderVerlofPagina(){
     }
   });
 
-  /* Dagkoppen: weekdag + dagnummer */
   dagen.forEach((d, i)=>{
     const isWeekend = d.getDay()===0 || d.getDay()===6;
     const isVandaag = d.getTime()===vandaag.getTime();
@@ -1142,15 +1078,12 @@ function renderVerlofPagina(){
     svg += `<text x="${midX}" y="50" class="g-dagnr ${isWeekend?'weekend':''} ${isFeestdag?'feestdag':''} ${isVandaag?'vandaag':''}">${d.getDate()}</text>`;
   });
 
-  /* Rijen: naam + dagcellen */
   namen.forEach((naam, ri)=>{
     const y = padBoven + ri * rijHoogte;
     svg += `<text x="${naamKolom-12}" y="${y + rijHoogte/2 + 5}" text-anchor="end" class="g-naam">${esc(naam)}</text>`;
     dagen.forEach((d, i)=>{
       const isWeekend = d.getDay()===0 || d.getDay()===6;
       const isFeestdag = feestdagen.has(dagKey(d));
-      /* Bepaal of deze persoon deze dag afwezig is (ziekte gaat voor bij overlap);
-         een feestdag gaat boven alles: dan is iedereen sowieso vrij. */
       let type = null;
       perPersoon[naam].forEach(v=>{
         if(d >= v.vanD && d <= v.totD){
@@ -1162,7 +1095,6 @@ function renderVerlofPagina(){
     });
   });
 
-  /* Kader rond de kolom van vandaag */
   const vandaagIndex = Math.round((vandaag - start) / msDag);
   if(vandaagIndex >= 0 && vandaagIndex < AANTAL_DAGEN){
     svg += `<rect x="${dagX(vandaagIndex)-2}" y="${padBoven+1}" width="${celBreedte+4}" height="${namen.length * rijHoogte - 4}" rx="6" class="g-vandaag-kader"></rect>`;
@@ -1170,20 +1102,24 @@ function renderVerlofPagina(){
 
   wrap.innerHTML = `<svg class="gantt-svg" viewBox="0 0 ${w} ${h}">${svg}</svg>`;
 }
-renderVerlofPagina();
 
 /* ---------------- DAGTIP ---------------- */
 function toonDagtip(){
   document.getElementById('dagtip-tekst').textContent = dagtipVanVandaag();
   document.getElementById('dagtip-datum').textContent = new Date().toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long' });
 }
-toonDagtip();
 
-/* ---------------- ROTATIE TUSSEN DASHBOARD, BEURSKOERSEN EN DAGTIP ----------------
-   Wisselt elke minuut: hoofddashboard → beurskoersen → tip van de dag → opnieuw.
-   Staat tijdelijk stil zolang het ⚙️-configuratiepaneel open is.
-   Kan ook meteen manueel doorgeklikt worden via het ⏭️-knopje rechtsonder,
-   handig om snel te testen zonder telkens een minuut te wachten. */
+/* ---------------- EERSTE OPBOUW ----------------
+   Eerst met de reservelijsten zodat er meteen iets staat,
+   daarna vervangen door de Sheet zodra die binnen is. */
+renderAll();
+renderVerlofPagina();
+toonDagtip();
+toonBronLabel();
+laadUitSheet();
+setInterval(laadUitSheet, 15*60*1000);
+
+/* ---------------- ROTATIE ---------------- */
 const rotatieFases = ['dashboard', 'beurs', 'verlof', 'dagtip'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
@@ -1208,10 +1144,7 @@ function rotatieHerstart(){
 }
 rotatieHerstart();
 
-/* ---------------- AUTOMATISCH HERLADEN ----------------
-   Elke 15 min, maar enkel wanneer het hoofddashboard toont
-   (geen abrupte sprong midden in een rotatiepagina) en het
-   configuratiepaneel niet openstaat. */
+/* ---------------- AUTOMATISCH HERLADEN ---------------- */
 setInterval(()=>{
   if(cfgIsOpen) return;
   if(rotatieFases[rotatieIndex] !== 'dashboard') return;
