@@ -920,7 +920,7 @@ function maakSparkline(closes, dates, omhoog){
   </svg>`;
 }
 
-onst HISTORIE_CACHE_KEY = 'varda-beurs-historie-v2';
+const HISTORIE_CACHE_KEY = 'varda-beurs-historie-v2';
 
 async function haalHistorieOp(){
   const vandaag = new Date().toISOString().slice(0,10);
