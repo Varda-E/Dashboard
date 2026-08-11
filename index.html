@@ -920,29 +920,38 @@ function maakSparkline(closes, dates, omhoog){
   </svg>`;
 }
 
-const HISTORIE_CACHE_KEY = 'varda-beurs-historie-v1';
+onst HISTORIE_CACHE_KEY = 'varda-beurs-historie-v2';
 
 async function haalHistorieOp(){
   const vandaag = new Date().toISOString().slice(0,10);
+  let cache = {};
   try{
     const saved = localStorage.getItem(HISTORIE_CACHE_KEY);
     if(saved){
       const parsed = JSON.parse(saved);
-      if(parsed.datum === vandaag && parsed.data) return parsed.data;
+      if(parsed.datum === vandaag && parsed.data) cache = parsed.data;
     }
   }catch(e){}
 
+  /* Enkel opnieuw ophalen wat nog ontbreekt. Zo blijft een eenmalig
+     misluke aanvraag (bv. door de aanvraaglimiet) niet de hele dag
+     hangen — bij de volgende keer wordt gewoon opnieuw geprobeerd. */
+  const ontbrekend = BEURS_SYMBOLEN.filter(s => !cache[s.symbool]);
+  if(ontbrekend.length === 0) return cache;
+
   const wacht = ms => new Promise(r=> setTimeout(r, ms));
-  const data = {};
-  for(const s of BEURS_SYMBOLEN){
+  for(const s of ontbrekend){
     try{
       const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${s.symbool}&interval=1day&outputsize=30&apikey=${BEURS_API_KEY}`);
-      data[s.symbool] = await res.json();
-    }catch(e){ data[s.symbool] = null; }
-    await wacht(400);
+      const json = await res.json();
+      if(json && Array.isArray(json.values) && json.values.length > 1){
+        cache[s.symbool] = json;
+      }
+    }catch(e){ /* niet bewaren, opnieuw proberen bij de volgende keer */ }
+    await wacht(700);
   }
-  try{ localStorage.setItem(HISTORIE_CACHE_KEY, JSON.stringify({ datum: vandaag, data })); }catch(e){}
-  return data;
+  try{ localStorage.setItem(HISTORIE_CACHE_KEY, JSON.stringify({ datum: vandaag, data: cache })); }catch(e){}
+  return cache;
 }
 
 async function laadBeurskoersen(){
