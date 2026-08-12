@@ -192,6 +192,9 @@ function dagtipVanVandaag(){
   body.nacht .mededelingen-label{ background:#5d463a; }
 
   *{ box-sizing:border-box; margin:0; padding:0; }
+  /* Een bord wordt niet aangeraakt: scrollbalken zijn hier alleen ruis. */
+  *::-webkit-scrollbar{ width:0; height:0; }
+  *{ scrollbar-width:none; }
   html,body{ width:100%; height:100%; background:var(--bg); overflow:hidden; font-family:'Inter',sans-serif; color:var(--ink); }
 
   .sheet{
@@ -440,54 +443,64 @@ function dagtipVanVandaag(){
 
   /* ---------- BEZETTING: overzicht per werf ---------- */
   .bez-grid{
-    display:grid; gap:18px; width:94vw; max-width:1620px;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-    max-height:72vh; overflow:auto; align-content:start;
+    display:grid; gap:20px; width:94vw; max-width:1660px;
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+    max-height:74vh; overflow:hidden; align-content:start;
   }
   .bez-kaart{
     background:var(--card); border:1px solid var(--card-border); border-radius:18px;
-    box-shadow:var(--shadow); padding:18px 22px 16px 22px;
+    box-shadow:var(--shadow); padding:20px 24px 18px 24px;
     display:flex; flex-direction:column; border-top:5px solid var(--red);
   }
   .bez-kaart.intern{ border-top-color:var(--tan); }
   .bez-kop{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
   .bez-werf{
-    font-family:'Manrope',sans-serif; font-weight:800; font-size:18px;
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:19px;
     line-height:1.25; color:var(--ink);
   }
   .bez-aantal{
-    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--red);
-    background:rgba(188,23,2,0.08); padding:3px 10px; border-radius:20px; white-space:nowrap;
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:15px; color:var(--red);
+    background:rgba(188,23,2,0.08); padding:4px 13px; border-radius:20px; white-space:nowrap;
   }
   .bez-kaart.intern .bez-aantal{ color:var(--brown); background:rgba(126,94,79,0.10); }
   .bez-meta{
     font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-soft);
-    margin-top:5px; letter-spacing:0.01em;
+    margin-top:6px; letter-spacing:0.01em;
   }
-  .bez-mensen{ margin-top:12px; border-top:1px solid var(--card-border); padding-top:8px; }
+  .bez-mensen{
+    margin-top:14px; border-top:1px solid var(--card-border); padding-top:10px;
+    display:grid; grid-template-columns:1fr; gap:1px;
+  }
+  .bez-mensen.dubbel{ grid-template-columns:1fr 1fr; column-gap:18px; }
   .bez-persoon{
-    display:flex; align-items:baseline; justify-content:space-between; gap:14px;
-    padding:5px 0; font-size:15.5px;
+    display:flex; align-items:center; gap:9px;
+    padding:6px 0; font-size:16.5px;
   }
+  .bez-persoon::before{
+    content:''; width:5px; height:5px; border-radius:50%;
+    background:var(--red); opacity:0.45; flex-shrink:0;
+  }
+  .bez-kaart.intern .bez-persoon::before{ background:var(--brown); }
   .bez-persoon .nm{ font-weight:600; }
-  /* .tijd blijft ongebruikt: starttijden worden bewust niet getoond. */
-  .bez-persoon .tijd{
-    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft);
-    font-variant-numeric: tabular-nums;
-  }
   .bez-leeg{ font-size:15px; color:var(--ink-soft); text-align:center; padding:26px; }
 
-  /* ---------- KAART ---------- */
+  /* ---------- KAART ----------
+     Oudere tv-browsers rekenen flex:1 niet altijd goed uit en geven
+     de kaart dan nul breedte. Daarom expliciete breedtes. */
   .kaart-wrap{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
     box-shadow:var(--shadow); padding:14px;
-    width:92vw; max-width:1560px; height:72vh;
-    display:flex; gap:16px;
+    width:92vw; max-width:1560px; height:74vh;
+    position:relative;
   }
-  #kaart{ flex:1; height:100%; border-radius:12px; background:var(--bg); }
+  #kaart{
+    position:absolute; top:14px; bottom:14px; left:14px;
+    width:calc(100% - 374px);
+    border-radius:12px; background:var(--bg);
+  }
   .kaart-legende{
-    width:330px; flex-shrink:0; overflow:auto;
-    display:flex; flex-direction:column; gap:2px;
+    position:absolute; top:14px; bottom:14px; right:14px;
+    width:330px; overflow:hidden;
   }
   .kl-item{
     display:flex; align-items:flex-start; gap:11px;
@@ -1027,7 +1040,7 @@ function renderBezetting(){
         <div class="bez-aantal">${g.mensen.length}</div>
       </div>
       ${meta ? `<div class="bez-meta">${esc(meta)}</div>` : ''}
-      <div class="bez-mensen">
+      <div class="bez-mensen ${g.mensen.length > 5 ? 'dubbel' : ''}">
         ${g.mensen.map(p=>`<div class="bez-persoon">
             <span class="nm">${esc(p.naam)}</span>
           </div>`).join('')}
