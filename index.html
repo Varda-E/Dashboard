@@ -470,6 +470,7 @@ function dagtipVanVandaag(){
     padding:5px 0; font-size:15.5px;
   }
   .bez-persoon .nm{ font-weight:600; }
+  /* .tijd blijft ongebruikt: starttijden worden bewust niet getoond. */
   .bez-persoon .tijd{
     font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft);
     font-variant-numeric: tabular-nums;
@@ -1029,7 +1030,6 @@ function renderBezetting(){
       <div class="bez-mensen">
         ${g.mensen.map(p=>`<div class="bez-persoon">
             <span class="nm">${esc(p.naam)}</span>
-            <span class="tijd">${esc(p.sinds)}</span>
           </div>`).join('')}
       </div>
     </div>`;
