@@ -39,7 +39,7 @@ const SHEET_URLS = {
   verj:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=911558667&single=true&output=csv",
   tips:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=242170602&single=true&output=csv",
   med:       "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=2141493263&single=true&output=csv",
-  bezetting: "https://docs.google.com/spreadsheets/d/1ENFG4F5TnxOJixlXVqBuI2mzaJdvB8uN6lFKEI1tfJw/edit?usp=sharing",
+  bezetting: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pubhtml?gid=1193772928&single=true",
 };
 
 /* ============================================================
@@ -419,6 +419,23 @@ function dagtipVanVandaag(){
   .beurs-chart .chart-as-x-links{ text-anchor:start; }
   .beurs-chart .chart-as-x-rechts{ text-anchor:end; }
 
+  .dagtip-kaart{
+    background:var(--card); border:1px solid var(--card-border); border-radius:20px;
+    box-shadow:var(--shadow); padding:44px 60px; max-width:780px; text-align:center;
+  }
+  .dagtip-icoon{ font-size:38px; margin-bottom:18px; }
+  .dagtip-tekst{
+    font-family:'Manrope',sans-serif; font-weight:600; font-size:24px;
+    line-height:1.5; color:var(--ink);
+  }
+  .dagtip-datum{
+    margin-top:20px; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--ink-soft); text-transform:capitalize;
+  }
+  .beurs-leeg{
+    font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
+  }
+
   /* ---------- BEZETTING: overzicht per werf ---------- */
   .bez-grid{
     display:grid; gap:18px; width:94vw; max-width:1620px;
@@ -669,6 +686,7 @@ function toonBronLabel(){
   if(sheetStatus === 'uit')  el.textContent = '⚙ Sheet-links nog niet ingevuld — reservelijst actief';
   if(sheetStatus === 'fout') el.textContent = '⚠ Sheet niet bereikbaar — reservelijst actief';
   if(sheetStatus === 'laden') el.textContent = '… gegevens laden';
+  if(sheetStatus === 'deels') el.textContent = '⚠ Niet geladen: ' + mislukteTabbladen.join(', ');
 }
 
 /* ---------------- CSV UIT DE SHEET ---------------- */
@@ -747,7 +765,24 @@ function normGetal(s){
 async function haalTabblad(url){
   const res = await fetch(url, { cache: 'no-store' });
   if(!res.ok) throw new Error('HTTP ' + res.status);
-  return csvNaarObjecten(await res.text());
+  const tekst = await res.text();
+  /* Een deellink geeft geen CSV terug maar een inlogpagina. Dat
+     herkennen we hieraan, zodat de melding duidelijk is. */
+  if(/^\s*</.test(tekst)) throw new Error('geen CSV — is dit wel een publicatielink?');
+  return csvNaarObjecten(tekst);
+}
+
+/* Eén onbereikbaar tabblad mag de andere vijf niet meeslepen. */
+let mislukteTabbladen = [];
+async function haalVeilig(naam, url, bruikbaar){
+  if(!bruikbaar(url)) return null;
+  try{
+    return await haalTabblad(url);
+  }catch(e){
+    mislukteTabbladen.push(naam);
+    console.warn('Tabblad "' + naam + '" niet geladen:', e.message);
+    return null;
+  }
 }
 
 async function laadUitSheet(){
@@ -757,14 +792,15 @@ async function laadUitSheet(){
     sheetStatus = 'uit'; toonBronLabel(); return;
   }
 
+  mislukteTabbladen = [];
   try{
     const [aanb, verlof, verj, tips, med, bezetting] = await Promise.all([
-      bruikbaar(urls.aanb)      ? haalTabblad(urls.aanb)      : Promise.resolve(null),
-      bruikbaar(urls.verlof)    ? haalTabblad(urls.verlof)    : Promise.resolve(null),
-      bruikbaar(urls.verj)      ? haalTabblad(urls.verj)      : Promise.resolve(null),
-      bruikbaar(urls.tips)      ? haalTabblad(urls.tips)      : Promise.resolve(null),
-      bruikbaar(urls.med)       ? haalTabblad(urls.med)       : Promise.resolve(null),
-      bruikbaar(urls.bezetting) ? haalTabblad(urls.bezetting) : Promise.resolve(null),
+      haalVeilig('aanbestedingen', urls.aanb,      bruikbaar),
+      haalVeilig('verlof',         urls.verlof,    bruikbaar),
+      haalVeilig('verjaardagen',   urls.verj,      bruikbaar),
+      haalVeilig('tips',           urls.tips,      bruikbaar),
+      haalVeilig('mededelingen',   urls.med,       bruikbaar),
+      haalVeilig('bezetting',      urls.bezetting, bruikbaar),
     ]);
 
     /* Een leeg tabblad mag bestaande gegevens niet wissen. */
@@ -813,7 +849,7 @@ async function laadUitSheet(){
       if(r.length) BEZETTING = r;
     }
 
-    sheetStatus = 'ok';
+    sheetStatus = mislukteTabbladen.length ? 'deels' : 'ok';
     laatsteVerversing = new Date();
   }catch(e){
     sheetStatus = 'fout';
@@ -1003,7 +1039,6 @@ function renderKaart(){
   kaartLaag.clearLayers();
   if(!punten.length) return;
 
-  const stijl = document.body.classList.contains('nacht');
   punten.forEach(g=>{
     const straal = Math.min(9 + g.mensen.length * 2.5, 22);
     L.circleMarker([g.lat, g.lon], {
@@ -1072,7 +1107,13 @@ function cfgOpen(){ cfgIsOpen = true; document.getElementById('cfg-overlay').cla
 function cfgClose(){ cfgIsOpen = false; document.getElementById('cfg-overlay').classList.remove('open'); }
 
 function cfgRender(){
-  const bron = { ok:'Google Sheet', uit:'reservelijst (links nog niet ingevuld)', fout:'reservelijst (Sheet onbereikbaar)', laden:'aan het laden' }[sheetStatus];
+  const bron = {
+    ok:'Google Sheet',
+    deels:'Google Sheet — mislukt: ' + mislukteTabbladen.join(', '),
+    uit:'reservelijst (links nog niet ingevuld)',
+    fout:'reservelijst (Sheet onbereikbaar)',
+    laden:'aan het laden'
+  }[sheetStatus];
   const tijd = laatsteVerversing ? laatsteVerversing.toLocaleTimeString('nl-BE', {hour:'2-digit', minute:'2-digit'}) : '—';
   document.getElementById('cfg-body').innerHTML = `
     <div class="cfg-note">
