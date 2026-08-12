@@ -480,24 +480,53 @@ function dagtipVanVandaag(){
   .kaart-wrap{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
     box-shadow:var(--shadow); padding:14px;
-    width:88vw; max-width:1400px; height:70vh;
+    width:92vw; max-width:1560px; height:72vh;
+    display:flex; gap:16px;
   }
-  #kaart{ width:100%; height:100%; border-radius:12px; background:var(--bg); }
+  #kaart{ flex:1; height:100%; border-radius:12px; background:var(--bg); }
+  .kaart-legende{
+    width:330px; flex-shrink:0; overflow:auto;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .kl-item{
+    display:flex; align-items:flex-start; gap:11px;
+    padding:9px 8px; border-bottom:1px solid var(--card-border);
+  }
+  .kl-item:last-child{ border-bottom:none; }
+  .kl-nr{
+    flex-shrink:0; width:24px; height:24px; border-radius:50%;
+    background:var(--red); color:#fff;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .kl-item.intern .kl-nr{ background:var(--brown); }
+  .kl-tekst{ flex:1; min-width:0; }
+  .kl-werf{ font-weight:600; font-size:15px; line-height:1.3; }
+  .kl-plaats{
+    font-family:'IBM Plex Mono',monospace; font-size:11px;
+    color:var(--ink-soft); margin-top:2px;
+  }
+  .kl-aantal{
+    flex-shrink:0; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--red); background:rgba(188,23,2,0.08);
+    padding:2px 9px; border-radius:20px; margin-top:2px;
+  }
+  .kl-item.intern .kl-aantal{ color:var(--brown); background:rgba(126,94,79,0.10); }
   .kaart-leeg{
     display:flex; align-items:center; justify-content:center; height:100%;
     font-size:15px; color:var(--ink-soft); text-align:center; padding:30px;
   }
   .leaflet-container{ background:var(--bg); font-family:'Inter',sans-serif; }
   body.nacht .leaflet-tile-pane{ filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.92); }
-  .marker-label{
-    background:var(--card); border:1px solid var(--card-border); border-radius:8px;
-    box-shadow:var(--shadow); padding:4px 9px; white-space:nowrap;
-    font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink);
+  .kaart-pin{ background:none; border:none; }
+  .kaart-pin div{
+    width:100%; height:100%; border-radius:50%;
+    background:var(--red); color:#fff; border:2px solid var(--card);
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600;
   }
-  .marker-label .n{
-    font-family:'IBM Plex Mono',monospace; color:var(--red); margin-left:6px; font-weight:700;
-  }
-  .leaflet-tooltip.marker-label::before{ display:none; }
+  .kaart-pin.intern div{ background:var(--brown); }
 
   .verlof-legende{
     display:flex; gap:26px; margin:-14px 0 18px 0;
@@ -636,7 +665,10 @@ function dagtipVanVandaag(){
   </div>
   <div class="rotatie-slide" id="slide-kaart">
     <div class="rotatie-titel">📍 <span>Werven vandaag</span><span class="telling" id="kaart-telling"></span></div>
-    <div class="kaart-wrap"><div id="kaart"></div></div>
+    <div class="kaart-wrap">
+      <div id="kaart"></div>
+      <div class="kaart-legende" id="kaart-legende"></div>
+    </div>
   </div>
   <div class="rotatie-slide" id="slide-beurs">
     <div class="rotatie-titel">📈 <span>Markten</span></div>
@@ -1013,6 +1045,7 @@ let kaartLaag = null;
 
 function renderKaart(){
   const vak = document.getElementById('kaart');
+  const legende = document.getElementById('kaart-legende');
   if(!vak) return;
 
   if(typeof L === 'undefined'){
@@ -1024,12 +1057,24 @@ function renderKaart(){
   const telling = document.getElementById('kaart-telling');
   if(telling) telling.textContent = punten.length ? `${punten.length} locaties` : '';
 
+  if(legende){
+    legende.innerHTML = punten.map((g,i)=>`
+      <div class="kl-item ${g.intern ? 'intern' : ''}">
+        <div class="kl-nr">${i+1}</div>
+        <div class="kl-tekst">
+          <div class="kl-werf">${esc(g.werf)}</div>
+          <div class="kl-plaats">${esc([g.code, g.stad].filter(Boolean).join(' · '))}</div>
+        </div>
+        <div class="kl-aantal">${g.mensen.length}</div>
+      </div>`).join('');
+  }
+
   if(!kaartObject){
     kaartObject = L.map('kaart', {
       zoomControl: false, attributionControl: true,
       dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
       boxZoom: false, keyboard: false, touchZoom: false
-    }).setView([50.64, 4.67], 8);
+    }).setView([50.9, 4.5], 8);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap, &copy; CARTO', maxZoom: 19
@@ -1038,27 +1083,28 @@ function renderKaart(){
     kaartLaag = L.layerGroup().addTo(kaartObject);
   }
 
+  /* Opnieuw opmeten voordat we de uitsnede bepalen: anders rekent
+     Leaflet met een vlak dat nog geen breedte heeft en vallen de
+     buitenste werven buiten beeld. */
+  kaartObject.invalidateSize();
+
   kaartLaag.clearLayers();
   if(!punten.length) return;
 
-  punten.forEach(g=>{
-    const straal = Math.min(9 + g.mensen.length * 2.5, 22);
-    L.circleMarker([g.lat, g.lon], {
-      radius: straal,
-      color: g.intern ? '#7e5e4f' : '#bc1702',
-      weight: 2,
-      fillColor: g.intern ? '#caa798' : '#bc1702',
-      fillOpacity: 0.35
-    })
-    .bindTooltip(
-      `<span>${esc(g.werf)}</span><span class="n">${g.mensen.length}</span>`,
-      { permanent: true, direction: 'top', offset: [0, -straal - 2], className: 'marker-label' }
-    )
-    .addTo(kaartLaag);
+  punten.forEach((g,i)=>{
+    const maat = Math.min(26 + g.mensen.length * 3, 44);
+    L.marker([g.lat, g.lon], {
+      icon: L.divIcon({
+        className: 'kaart-pin ' + (g.intern ? 'intern' : ''),
+        html: `<div style="font-size:${maat > 34 ? 15 : 13}px">${i+1}</div>`,
+        iconSize: [maat, maat],
+        iconAnchor: [maat/2, maat/2]
+      })
+    }).addTo(kaartLaag);
   });
 
   const grenzen = L.latLngBounds(punten.map(g => [g.lat, g.lon]));
-  kaartObject.fitBounds(grenzen, { padding: [70, 70], maxZoom: 10 });
+  kaartObject.fitBounds(grenzen, { padding: [55, 55], maxZoom: 11 });
 }
 
 /* ---------------- WEER (Open-Meteo) ---------------- */
@@ -1430,13 +1476,9 @@ function rotatieVolgende(){
   document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
   document.querySelectorAll('#rotatie-dots .dot').forEach((d,i)=> d.classList.toggle('actief', i === rotatieIndex));
 
-  /* De kaart meet zichzelf pas correct op wanneer ze zichtbaar is,
-     dus eerst opmeten en daarna pas het zoomniveau bepalen. */
+  /* De kaart kan zichzelf pas opmeten als ze zichtbaar is. */
   if(fase === 'kaart'){
-    setTimeout(()=>{
-      if(kaartObject) kaartObject.invalidateSize();
-      renderKaart();
-    }, 150);
+    setTimeout(renderKaart, 150);
   }
 }
 
