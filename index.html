@@ -6,6 +6,10 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 </style>
+<!-- Kaartbibliotheek (Leaflet). Vereist internet; zonder verbinding
+     toont de kaartpagina een nette melding in plaats van een leeg vlak. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -24,17 +28,18 @@ const LOCATIE = { naam: "Hoboken", lat: 51.1747, lon: 4.3487 };
    In de Sheet: Bestand > Delen > Publiceren op internet.
    Kies per tabblad, zet het formaat op "Door komma's gescheiden
    waarden (.csv)", klik Publiceren en plak de link hieronder.
-   Doe dat vijf keer, één keer per tabblad.
+   Doe dat zes keer, één keer per tabblad.
 
    Zolang hier PLAK_HIER staat, gebruikt het dashboard gewoon
    de reservelijsten verderop in dit bestand.
    ============================================================ */
 const SHEET_URLS = {
-  aanb:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=858766407&single=true&output=csv",
-  verlof: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1655683255&single=true&output=csv",
-  verj:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=911558667&single=true&output=csv",
-  tips:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=242170602&single=true&output=csv",
-  med:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=2141493263&single=true&output=csv",
+  aanb:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=858766407&single=true&output=csv",
+  verlof:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1655683255&single=true&output=csv",
+  verj:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=911558667&single=true&output=csv",
+  tips:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=242170602&single=true&output=csv",
+  med:       "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=2141493263&single=true&output=csv",
+  bezetting: "https://docs.google.com/spreadsheets/d/1ENFG4F5TnxOJixlXVqBuI2mzaJdvB8uN6lFKEI1tfJw/edit?usp=sharing",
 };
 
 /* ============================================================
@@ -101,6 +106,13 @@ let VERLOF = [
   { naam: "Glenn De Cleen", van: "2026-08-17", tot: "2026-08-17", soort: "[BF] Betaalde feestdag" },
   { naam: "Mohamed El Koubai", van: "2026-08-10", tot: "2026-08-14", soort: "[VAK] Vakantie (jaarlijks verlof)" },
   { naam: "Samir Ghadari", van: "2026-08-03", tot: "2026-08-03", soort: "[VAK] Vakantie (jaarlijks verlof)" },
+];
+
+/* Reservelijst bezetting — wordt overschreven door de Sheet.
+   Enkel bedoeld zodat het scherm niet leeg staat bij een storing. */
+let BEZETTING = [
+  { naam: "Voorbeeld A", werf: "Wielingenbad Wenduine", code: "S26/01118", sinds: "7:59", soort: "werf", adres: "Leopold II-Laan 18, 8420 De Haan", stad: "De Haan", lat: 51.300404, lon: 3.076834 },
+  { naam: "Voorbeeld B", werf: "WZC De Liberteyt",      code: "S26/01155", sinds: "8:24", soort: "werf", adres: "Sint-Sebastiaanstraat 23, 9032 Gent", stad: "Gent", lat: 51.08802, lon: 3.713787 },
 ];
 
 /* ============================================================
@@ -365,6 +377,10 @@ function dagtipVanVandaag(){
     margin-bottom:36px;
   }
   .rotatie-titel span{ color:var(--red); }
+  .rotatie-titel .telling{
+    color:var(--ink-soft); font-weight:600; font-size:15px; letter-spacing:0.04em;
+    text-transform:none; margin-left:14px;
+  }
   .rotatie-slide{ display:none; flex-direction:column; align-items:center; }
   .rotatie-slide.tonen{ display:flex; animation: slideIn .55s ease-out; }
   @keyframes slideIn{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
@@ -403,22 +419,66 @@ function dagtipVanVandaag(){
   .beurs-chart .chart-as-x-links{ text-anchor:start; }
   .beurs-chart .chart-as-x-rechts{ text-anchor:end; }
 
-  .dagtip-kaart{
+  /* ---------- BEZETTING: overzicht per werf ---------- */
+  .bez-grid{
+    display:grid; gap:18px; width:94vw; max-width:1620px;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    max-height:72vh; overflow:auto; align-content:start;
+  }
+  .bez-kaart{
+    background:var(--card); border:1px solid var(--card-border); border-radius:18px;
+    box-shadow:var(--shadow); padding:18px 22px 16px 22px;
+    display:flex; flex-direction:column; border-top:5px solid var(--red);
+  }
+  .bez-kaart.intern{ border-top-color:var(--tan); }
+  .bez-kop{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .bez-werf{
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:18px;
+    line-height:1.25; color:var(--ink);
+  }
+  .bez-aantal{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--red);
+    background:rgba(188,23,2,0.08); padding:3px 10px; border-radius:20px; white-space:nowrap;
+  }
+  .bez-kaart.intern .bez-aantal{ color:var(--brown); background:rgba(126,94,79,0.10); }
+  .bez-meta{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-soft);
+    margin-top:5px; letter-spacing:0.01em;
+  }
+  .bez-mensen{ margin-top:12px; border-top:1px solid var(--card-border); padding-top:8px; }
+  .bez-persoon{
+    display:flex; align-items:baseline; justify-content:space-between; gap:14px;
+    padding:5px 0; font-size:15.5px;
+  }
+  .bez-persoon .nm{ font-weight:600; }
+  .bez-persoon .tijd{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .bez-leeg{ font-size:15px; color:var(--ink-soft); text-align:center; padding:26px; }
+
+  /* ---------- KAART ---------- */
+  .kaart-wrap{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
-    box-shadow:var(--shadow); padding:44px 60px; max-width:780px; text-align:center;
+    box-shadow:var(--shadow); padding:14px;
+    width:88vw; max-width:1400px; height:70vh;
   }
-  .dagtip-icoon{ font-size:38px; margin-bottom:18px; }
-  .dagtip-tekst{
-    font-family:'Manrope',sans-serif; font-weight:600; font-size:24px;
-    line-height:1.5; color:var(--ink);
+  #kaart{ width:100%; height:100%; border-radius:12px; background:var(--bg); }
+  .kaart-leeg{
+    display:flex; align-items:center; justify-content:center; height:100%;
+    font-size:15px; color:var(--ink-soft); text-align:center; padding:30px;
   }
-  .dagtip-datum{
-    margin-top:20px; font-family:'IBM Plex Mono',monospace; font-size:12px;
-    color:var(--ink-soft); text-transform:capitalize;
+  .leaflet-container{ background:var(--bg); font-family:'Inter',sans-serif; }
+  body.nacht .leaflet-tile-pane{ filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.92); }
+  .marker-label{
+    background:var(--card); border:1px solid var(--card-border); border-radius:8px;
+    box-shadow:var(--shadow); padding:4px 9px; white-space:nowrap;
+    font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink);
   }
-  .beurs-leeg{
-    font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
+  .marker-label .n{
+    font-family:'IBM Plex Mono',monospace; color:var(--red); margin-left:6px; font-weight:700;
   }
+  .leaflet-tooltip.marker-label::before{ display:none; }
 
   .verlof-legende{
     display:flex; gap:26px; margin:-14px 0 18px 0;
@@ -533,7 +593,8 @@ function dagtipVanVandaag(){
 </div>
 
 <div class="rotatie-dots" id="rotatie-dots">
-  <div class="dot actief"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  <div class="dot actief"></div><div class="dot"></div><div class="dot"></div>
+  <div class="dot"></div><div class="dot"></div><div class="dot"></div>
 </div>
 
 <button class="cfg-btn" onclick="cfgOpen()" title="Gegevens beheren">⚙️</button>
@@ -550,6 +611,14 @@ function dagtipVanVandaag(){
 </div>
 
 <div class="rotatie-overlay" id="rotatie-overlay">
+  <div class="rotatie-slide" id="slide-bezetting">
+    <div class="rotatie-titel">👷 <span>Wie werkt waar</span><span class="telling" id="bez-telling"></span></div>
+    <div class="bez-grid" id="bez-grid"></div>
+  </div>
+  <div class="rotatie-slide" id="slide-kaart">
+    <div class="rotatie-titel">📍 <span>Werven vandaag</span><span class="telling" id="kaart-telling"></span></div>
+    <div class="kaart-wrap"><div id="kaart"></div></div>
+  </div>
   <div class="rotatie-slide" id="slide-beurs">
     <div class="rotatie-titel">📈 <span>Markten</span></div>
     <div class="beurs-grid" id="beurs-grid">
@@ -668,6 +737,12 @@ function normUur(s){
   const m = t.match(/^(\d{1,2}):(\d{2})/);
   return m ? `${String(m[1]).padStart(2,'0')}:${m[2]}` : t;
 }
+/* Google exporteert kommagetallen soms met een komma. */
+function normGetal(s){
+  const t = String(s || '').trim().replace(',', '.');
+  const n = parseFloat(t);
+  return isFinite(n) ? n : null;
+}
 
 async function haalTabblad(url){
   const res = await fetch(url, { cache: 'no-store' });
@@ -683,12 +758,13 @@ async function laadUitSheet(){
   }
 
   try{
-    const [aanb, verlof, verj, tips, med] = await Promise.all([
-      bruikbaar(urls.aanb)   ? haalTabblad(urls.aanb)   : Promise.resolve(null),
-      bruikbaar(urls.verlof) ? haalTabblad(urls.verlof) : Promise.resolve(null),
-      bruikbaar(urls.verj)   ? haalTabblad(urls.verj)   : Promise.resolve(null),
-      bruikbaar(urls.tips)   ? haalTabblad(urls.tips)   : Promise.resolve(null),
-      bruikbaar(urls.med)    ? haalTabblad(urls.med)    : Promise.resolve(null),
+    const [aanb, verlof, verj, tips, med, bezetting] = await Promise.all([
+      bruikbaar(urls.aanb)      ? haalTabblad(urls.aanb)      : Promise.resolve(null),
+      bruikbaar(urls.verlof)    ? haalTabblad(urls.verlof)    : Promise.resolve(null),
+      bruikbaar(urls.verj)      ? haalTabblad(urls.verj)      : Promise.resolve(null),
+      bruikbaar(urls.tips)      ? haalTabblad(urls.tips)      : Promise.resolve(null),
+      bruikbaar(urls.med)       ? haalTabblad(urls.med)       : Promise.resolve(null),
+      bruikbaar(urls.bezetting) ? haalTabblad(urls.bezetting) : Promise.resolve(null),
     ]);
 
     /* Een leeg tabblad mag bestaande gegevens niet wissen. */
@@ -722,6 +798,20 @@ async function laadUitSheet(){
       })).filter(x => x.tekst && x.datum);
       if(r.length) DATA.med = r;
     }
+    if(bezetting && bezetting.length){
+      const r = bezetting.map(x => ({
+        naam:  x.naam  || '',
+        werf:  x.werf  || '',
+        code:  x.code  || '',
+        sinds: normUur(x.sinds),
+        soort: (x.soort || '').toLowerCase(),
+        adres: x.adres || '',
+        stad:  x.stad  || '',
+        lat:   normGetal(x.lat),
+        lon:   normGetal(x.lon)
+      })).filter(x => x.naam && x.werf);
+      if(r.length) BEZETTING = r;
+    }
 
     sheetStatus = 'ok';
     laatsteVerversing = new Date();
@@ -733,6 +823,8 @@ async function laadUitSheet(){
   toonBronLabel();
   renderAll();
   renderVerlofPagina();
+  renderBezetting();
+  renderKaart();
   toonDagtip();
 }
 
@@ -812,6 +904,126 @@ function renderMededelingen(){
 
 function renderAll(){ renderAanbestedingen(); renderVerjaardagen(); renderMededelingen(); }
 
+/* ---------------- BEZETTING PER WERF ----------------
+   Groepeert de mensen per werf. Werven eerst (grootste ploeg
+   bovenaan), daarna de interne locaties. */
+function groepeerBezetting(){
+  const perWerf = {};
+  BEZETTING.forEach(b=>{
+    const sleutel = b.code || b.werf;
+    if(!perWerf[sleutel]){
+      perWerf[sleutel] = {
+        werf: b.werf, code: b.code, adres: b.adres, stad: b.stad,
+        lat: b.lat, lon: b.lon, intern: b.soort === 'intern', mensen: []
+      };
+    }
+    perWerf[sleutel].mensen.push({ naam: b.naam, sinds: b.sinds });
+  });
+
+  return Object.values(perWerf)
+    .map(g=>{
+      g.mensen.sort((a,b)=> String(a.sinds).localeCompare(String(b.sinds)) || a.naam.localeCompare(b.naam));
+      return g;
+    })
+    .sort((a,b)=>{
+      if(a.intern !== b.intern) return a.intern ? 1 : -1;
+      if(b.mensen.length !== a.mensen.length) return b.mensen.length - a.mensen.length;
+      return a.werf.localeCompare(b.werf);
+    });
+}
+
+function renderBezetting(){
+  const wrap = document.getElementById('bez-grid');
+  if(!wrap) return;
+  const groepen = groepeerBezetting();
+  const telling = document.getElementById('bez-telling');
+
+  if(!groepen.length){
+    if(telling) telling.textContent = '';
+    wrap.innerHTML = `<div class="bez-leeg">Nog geen tikkingen vandaag.</div>`;
+    return;
+  }
+
+  const werven = groepen.filter(g => !g.intern).length;
+  const mensen = groepen.reduce((n,g)=> n + g.mensen.length, 0);
+  if(telling) telling.textContent = `${mensen} mensen · ${werven} werven`;
+
+  wrap.innerHTML = groepen.map(g=>{
+    const meta = [g.code, g.stad || g.adres].filter(Boolean).join(' · ');
+    return `<div class="bez-kaart ${g.intern ? 'intern' : ''}">
+      <div class="bez-kop">
+        <div class="bez-werf">${esc(g.werf)}</div>
+        <div class="bez-aantal">${g.mensen.length}</div>
+      </div>
+      ${meta ? `<div class="bez-meta">${esc(meta)}</div>` : ''}
+      <div class="bez-mensen">
+        ${g.mensen.map(p=>`<div class="bez-persoon">
+            <span class="nm">${esc(p.naam)}</span>
+            <span class="tijd">${esc(p.sinds)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- KAART ----------------
+   Leaflet wordt pas opgebouwd wanneer de pagina voor het eerst
+   getoond wordt; een kaart in een verborgen vlak meet zichzelf
+   verkeerd op. */
+let kaartObject = null;
+let kaartLaag = null;
+
+function renderKaart(){
+  const vak = document.getElementById('kaart');
+  if(!vak) return;
+
+  if(typeof L === 'undefined'){
+    vak.innerHTML = `<div class="kaart-leeg">De kaartbibliotheek kon niet geladen worden.<br>Controleer de internetverbinding van dit scherm.</div>`;
+    return;
+  }
+
+  const punten = groepeerBezetting().filter(g => g.lat !== null && g.lon !== null);
+  const telling = document.getElementById('kaart-telling');
+  if(telling) telling.textContent = punten.length ? `${punten.length} locaties` : '';
+
+  if(!kaartObject){
+    kaartObject = L.map('kaart', {
+      zoomControl: false, attributionControl: true,
+      dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+      boxZoom: false, keyboard: false, touchZoom: false
+    }).setView([50.64, 4.67], 8);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap, &copy; CARTO', maxZoom: 19
+    }).addTo(kaartObject);
+
+    kaartLaag = L.layerGroup().addTo(kaartObject);
+  }
+
+  kaartLaag.clearLayers();
+  if(!punten.length) return;
+
+  const stijl = document.body.classList.contains('nacht');
+  punten.forEach(g=>{
+    const straal = Math.min(9 + g.mensen.length * 2.5, 22);
+    L.circleMarker([g.lat, g.lon], {
+      radius: straal,
+      color: g.intern ? '#7e5e4f' : '#bc1702',
+      weight: 2,
+      fillColor: g.intern ? '#caa798' : '#bc1702',
+      fillOpacity: 0.35
+    })
+    .bindTooltip(
+      `<span>${esc(g.werf)}</span><span class="n">${g.mensen.length}</span>`,
+      { permanent: true, direction: 'top', offset: [0, -straal - 2], className: 'marker-label' }
+    )
+    .addTo(kaartLaag);
+  });
+
+  const grenzen = L.latLngBounds(punten.map(g => [g.lat, g.lon]));
+  kaartObject.fitBounds(grenzen, { padding: [70, 70], maxZoom: 10 });
+}
+
 /* ---------------- WEER (Open-Meteo) ---------------- */
 const WMO = {
   0:['☀️','Helder'], 1:['🌤️','Overwegend helder'], 2:['⛅','Half bewolkt'], 3:['☁️','Bewolkt'],
@@ -862,12 +1074,12 @@ function cfgClose(){ cfgIsOpen = false; document.getElementById('cfg-overlay').c
 function cfgRender(){
   const bron = { ok:'Google Sheet', uit:'reservelijst (links nog niet ingevuld)', fout:'reservelijst (Sheet onbereikbaar)', laden:'aan het laden' }[sheetStatus];
   const tijd = laatsteVerversing ? laatsteVerversing.toLocaleTimeString('nl-BE', {hour:'2-digit', minute:'2-digit'}) : '—';
-  const link = (SHEET_URLS.aanb || '').replace(/\/pub\?.*$/, '');
   document.getElementById('cfg-body').innerHTML = `
     <div class="cfg-note">
       Alle gegevens worden beheerd in de <b>gedeelde Google Sheet</b>.
       Wijzigingen daar verschijnen hier automatisch, doorgaans binnen een
       kwartier. Je hoeft niets op te slaan of te publiceren.
+      Het tabblad <b>Bezetting</b> wordt automatisch gevuld vanuit GeoDynamics.
     </div>
     <div class="cfg-rij"><span>Huidige bron</span><span class="mono">${esc(bron)}</span></div>
     <div class="cfg-rij"><span>Laatst opgehaald</span><span class="mono">${esc(tijd)}</span></div>
@@ -876,6 +1088,7 @@ function cfgRender(){
     <div class="cfg-rij"><span>Verjaardagen</span><span class="mono">${DATA.verj.length} rijen</span></div>
     <div class="cfg-rij"><span>Tips</span><span class="mono">${DAGTIPS.length} rijen</span></div>
     <div class="cfg-rij"><span>Mededelingen</span><span class="mono">${DATA.med.length} rijen</span></div>
+    <div class="cfg-rij"><span>Bezetting</span><span class="mono">${BEZETTING.length} rijen</span></div>
     <div class="cfg-note" style="margin-top:18px;">
       Klopt er iets niet? Controleer in de Sheet of de kolomkoppen op rij 1
       nog juist staan en of de datums als <b>JJJJ-MM-DD</b> zijn ingevuld.
@@ -934,7 +1147,7 @@ async function haalHistorieOp(){
   }catch(e){}
 
   /* Enkel opnieuw ophalen wat nog ontbreekt. Zo blijft een eenmalig
-     misluke aanvraag (bv. door de aanvraaglimiet) niet de hele dag
+     mislukte aanvraag (bv. door de aanvraaglimiet) niet de hele dag
      hangen — bij de volgende keer wordt gewoon opnieuw geprobeerd. */
   const ontbrekend = BEURS_SYMBOLEN.filter(s => !cache[s.symbool]);
   if(ontbrekend.length === 0) return cache;
@@ -1151,13 +1364,14 @@ function toonDagtip(){
    daarna vervangen door de Sheet zodra die binnen is. */
 renderAll();
 renderVerlofPagina();
+renderBezetting();
 toonDagtip();
 toonBronLabel();
 laadUitSheet();
 setInterval(laadUitSheet, 15*60*1000);
 
 /* ---------------- ROTATIE ---------------- */
-const rotatieFases = ['dashboard', 'beurs', 'verlof', 'dagtip'];
+const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'beurs', 'verlof', 'dagtip'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
@@ -1166,10 +1380,18 @@ function rotatieVolgende(){
   const fase = rotatieFases[rotatieIndex];
   const overlay = document.getElementById('rotatie-overlay');
   overlay.classList.toggle('tonen', fase !== 'dashboard');
+  document.getElementById('slide-bezetting').classList.toggle('tonen', fase === 'bezetting');
+  document.getElementById('slide-kaart').classList.toggle('tonen', fase === 'kaart');
   document.getElementById('slide-beurs').classList.toggle('tonen', fase === 'beurs');
   document.getElementById('slide-verlof').classList.toggle('tonen', fase === 'verlof');
   document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
   document.querySelectorAll('#rotatie-dots .dot').forEach((d,i)=> d.classList.toggle('actief', i === rotatieIndex));
+
+  /* De kaart meet zichzelf pas correct op wanneer ze zichtbaar is. */
+  if(fase === 'kaart'){
+    renderKaart();
+    if(kaartObject) setTimeout(()=> kaartObject.invalidateSize(), 120);
+  }
 }
 
 function rotatieHerstart(){
@@ -1188,5 +1410,4 @@ setInterval(()=>{
   location.reload();
 }, 15*60*1000);
 </script>
-</body>
-</html>
+</body></html>
