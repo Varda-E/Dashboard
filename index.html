@@ -39,6 +39,8 @@ const SHEET_URLS = {
   verj:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=911558667&single=true&output=csv",
   tips:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=242170602&single=true&output=csv",
   med:       "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=2141493263&single=true&output=csv",
+  /* LET OP: dit moet een publicatielink zijn — die bevat /pub? en
+     output=csv. Een deellink die op /edit eindigt werkt niet. */
   bezetting: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1193772928&single=true&output=csv",
 };
 
@@ -671,7 +673,7 @@ let DATA = { aanb: AANBESTEDINGEN, verj: VERJAARDAGEN, med: MEDEDELINGEN };
 /* Klein labeltje linksonder dat toont waar de gegevens vandaan
    komen. Bij een storing zie je zo meteen dat het scherm op de
    reservelijst draait, in plaats van dat het stil verouderd. */
-let sheetStatus = 'laden'; /* laden | ok | uit | fout */
+let sheetStatus = 'laden'; /* laden | ok | deels | uit | fout */
 let laatsteVerversing = null;
 
 function toonBronLabel(){
@@ -1428,10 +1430,13 @@ function rotatieVolgende(){
   document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
   document.querySelectorAll('#rotatie-dots .dot').forEach((d,i)=> d.classList.toggle('actief', i === rotatieIndex));
 
-  /* De kaart meet zichzelf pas correct op wanneer ze zichtbaar is. */
+  /* De kaart meet zichzelf pas correct op wanneer ze zichtbaar is,
+     dus eerst opmeten en daarna pas het zoomniveau bepalen. */
   if(fase === 'kaart'){
-    renderKaart();
-    if(kaartObject) setTimeout(()=> kaartObject.invalidateSize(), 120);
+    setTimeout(()=>{
+      if(kaartObject) kaartObject.invalidateSize();
+      renderKaart();
+    }, 150);
   }
 }
 
