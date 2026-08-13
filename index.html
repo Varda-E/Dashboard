@@ -41,7 +41,7 @@ const SHEET_URLS = {
      output=csv. Een deellink die op /edit eindigt werkt niet. */
   bezetting: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1193772928&single=true&output=csv",
   /* Tabblad "Uren": uren per werf, deze maand en totaal sinds 2026. */
-  uren:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=31192058&single=true&output=csv",
+  uren:      "PLAK_HIER",
 };
 
 /* ============================================================
@@ -447,32 +447,32 @@ function dagtipVanVandaag(){
   /* ---------- UREN PER WERF ---------- */
   .uren-vak{ width:94vw; max-width:1700px; height:74vh; overflow:hidden; }
   .uren-grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:0 44px;
+    display:grid; grid-template-columns:1fr 1fr; gap:0 48px;
     width:100%; transform-origin: top center;
   }
-  .uren-rij{
-    display:grid; grid-template-columns: 1fr auto;
-    align-items:baseline; gap:16px;
-    padding:9px 4px 7px 4px; border-bottom:1px solid var(--card-border);
+  .uren-rij{ padding:10px 4px 12px 4px; border-bottom:1px solid var(--card-border); }
+  .uren-kop{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:16px; margin-bottom:7px;
   }
   .uren-naam{ font-weight:600; font-size:17px; line-height:1.25; }
   .uren-code{
     font-family:'IBM Plex Mono',monospace; font-size:11.5px;
     color:var(--ink-soft); margin-left:9px; font-weight:400;
   }
-  .uren-cijfers{ text-align:right; white-space:nowrap; }
-  .uren-maand{
-    font-family:'Manrope',sans-serif; font-weight:800; font-size:19px; color:var(--red);
+  .uren-cijfers{
+    font-family:'IBM Plex Mono',monospace; font-size:13px;
+    color:var(--ink-soft); white-space:nowrap;
   }
-  .uren-totaal{
-    font-family:'IBM Plex Mono',monospace; font-size:12px;
-    color:var(--ink-soft); margin-left:9px;
-  }
+  .uren-cijfers b{ color:var(--red); font-weight:600; }
   .uren-balk{
-    grid-column:1 / -1; height:6px; border-radius:3px;
-    background:rgba(188,23,2,0.10); margin-top:6px; overflow:hidden;
+    height:9px; border-radius:5px;
+    background:rgba(188,23,2,0.10); overflow:hidden;
   }
-  .uren-balk i{ display:block; height:100%; background:var(--red); border-radius:3px; }
+  .uren-balk i{ display:block; height:100%; background:var(--red); border-radius:5px; }
+  /* Werven van vóór 2026: het aandeel is dan niet volledig. */
+  .uren-rij.ouder .uren-balk i{ opacity:0.45; }
+  .uren-rij.ouder .uren-code::after{ content:' ·2025'; opacity:0.7; }
   .uren-leeg{ font-size:16px; color:var(--ink-soft); text-align:center; padding:30px; }
 
   /* ---------- KAART ----------
@@ -492,10 +492,20 @@ function dagtipVanVandaag(){
   .kaart-legende{
     position:absolute; top:20px; bottom:20px; right:20px;
     width:340px; overflow:hidden;
+    border-left:1px solid var(--card-border); padding-left:24px;
   }
   .kaart-legende > div{ transform-origin: top center; }
-  .k-land{ fill:var(--bg); stroke:var(--ink-soft); stroke-width:2; stroke-linejoin:round; opacity:0.9; }
-  body.nacht .k-land{ fill:#33363f; stroke:#5b616d; }
+  .k-land{ fill:var(--bg); stroke:none; }
+  body.nacht .k-land{ fill:#33363f; }
+  .k-prov{
+    fill:none; stroke:var(--ink-soft); stroke-width:1.2;
+    stroke-linejoin:round; opacity:0.35;
+  }
+  .k-rand{
+    fill:none; stroke:var(--ink-soft); stroke-width:2.4;
+    stroke-linejoin:round; opacity:0.75;
+  }
+  body.nacht .k-prov, body.nacht .k-rand{ stroke:#6b7280; }
   .k-stad{ fill:var(--ink-soft); opacity:0.45; }
   .k-stadnaam{
     font-family:'Inter',sans-serif; font-size:15px; font-weight:500;
@@ -1121,7 +1131,6 @@ function renderUren(){
   }
 
   const totaalMaand = rijen.reduce((n,r)=> n + r.maand, 0);
-  const grootste = rijen[0].maand || 1;
   const maandNaam = new Date().toLocaleDateString('nl-BE', { month:'long' });
   if(telling){
     telling.textContent = maandNaam + ' · ' + Math.round(totaalMaand) + ' uur · '
@@ -1130,15 +1139,19 @@ function renderUren(){
 
   const getal = n => n.toLocaleString('nl-BE', { maximumFractionDigits: 0 });
 
-  wrap.innerHTML = rijen.map(r=>`
-    <div class="uren-rij">
-      <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
-      <div class="uren-cijfers">
-        <span class="uren-maand">${getal(r.maand)} u</span>
-        <span class="uren-totaal">${getal(r.totaal)} tot.</span>
+  wrap.innerHTML = rijen.map(r=>{
+    const deel = r.totaal > 0 ? Math.min(100, r.maand / r.totaal * 100) : 0;
+    /* Werven met een S25-nummer liepen al in 2025; hun totaal telt
+       hier enkel vanaf januari 2026, dus het aandeel oogt te hoog. */
+    const ouder = /^S25\//.test(r.code);
+    return `<div class="uren-rij ${ouder ? 'ouder' : ''}">
+      <div class="uren-kop">
+        <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
+        <div class="uren-cijfers"><b>${getal(r.maand)} u</b> deze maand · ${getal(r.totaal)} u tot.</div>
       </div>
-      <div class="uren-balk"><i style="width:${Math.max(2, r.maand / grootste * 100).toFixed(1)}%"></i></div>
-    </div>`).join('');
+      <div class="uren-balk"><i style="width:${Math.max(1.5, deel).toFixed(1)}%"></i></div>
+    </div>`;
+  }).join('');
 
   pasPassend(wrap, wrap.parentElement);
 }
@@ -1149,6 +1162,7 @@ function renderUren(){
    stippen exact op hun plek vallen. Geen externe verzoeken, geen
    bibliotheek: dit werkt ook op oudere tv-browsers. */
 const KAART_PAD = 'M0.0,169.3 L156.5,69.0 L214.8,50.0 L217.1,66.0 L215.8,86.0 L219.5,96.4 L225.8,103.4 L241.9,108.0 L254.2,106.1 L254.8,92.1 L257.6,89.2 L282.3,85.3 L325.6,100.2 L326.9,114.5 L334.0,120.6 L364.7,120.1 L427.4,82.6 L437.6,68.6 L441.2,53.0 L446.3,57.8 L450.2,69.5 L462.3,82.9 L463.6,88.1 L460.7,94.7 L463.7,93.2 L469.5,82.9 L458.8,77.5 L457.2,60.5 L451.4,52.5 L473.4,59.6 L490.4,57.7 L491.7,50.5 L482.3,35.8 L484.7,25.3 L481.6,21.9 L495.1,13.9 L520.0,8.1 L522.1,11.6 L519.0,27.8 L524.0,31.4 L547.2,32.2 L553.4,28.8 L573.5,4.1 L585.8,0.0 L597.5,8.3 L595.3,26.8 L597.2,34.0 L585.9,28.7 L583.0,29.2 L581.5,34.2 L620.0,43.1 L632.1,35.2 L646.4,8.8 L650.4,7.8 L658.9,13.9 L664.0,23.7 L660.2,37.3 L660.9,50.3 L669.9,60.2 L675.1,75.7 L694.4,77.8 L699.0,83.7 L699.1,98.4 L744.2,98.4 L765.6,86.2 L771.3,86.9 L782.2,97.1 L784.8,114.5 L790.8,119.6 L805.5,124.0 L814.3,131.4 L832.9,129.5 L846.1,142.5 L858.4,140.8 L861.4,148.1 L856.9,156.4 L862.8,162.7 L852.2,165.5 L853.9,171.5 L850.6,180.0 L843.5,181.4 L841.5,190.9 L845.1,195.7 L830.7,222.2 L841.5,222.2 L830.7,241.8 L823.5,245.1 L804.8,266.1 L805.3,275.3 L809.5,281.6 L825.1,289.5 L821.9,303.8 L826.6,306.5 L832.1,306.5 L838.5,298.7 L849.1,307.4 L901.5,308.3 L901.3,311.3 L905.6,313.6 L905.8,325.3 L923.8,323.2 L928.8,328.2 L944.6,352.4 L941.2,354.6 L944.2,360.5 L967.5,363.8 L963.2,375.0 L949.3,385.2 L944.5,392.7 L948.8,398.2 L947.1,403.2 L952.3,404.3 L950.2,407.9 L956.6,416.1 L969.1,412.7 L990.2,418.3 L986.7,424.4 L988.9,432.2 L994.0,437.6 L990.4,464.3 L999.5,480.0 L1000.0,485.7 L996.8,489.1 L977.0,490.4 L972.7,497.5 L973.3,505.2 L952.0,515.3 L943.6,523.4 L940.9,526.9 L944.4,530.8 L945.6,539.9 L942.2,545.0 L934.8,546.8 L932.9,554.7 L936.4,559.3 L933.3,564.8 L929.4,563.1 L928.0,552.3 L924.7,549.1 L912.8,553.5 L906.5,551.4 L902.4,542.7 L892.8,546.5 L887.5,561.6 L869.7,574.3 L867.6,586.2 L860.7,594.4 L860.3,606.0 L851.6,612.5 L851.3,618.1 L854.2,622.5 L841.5,635.0 L829.9,657.3 L828.8,661.1 L840.0,670.7 L833.2,670.0 L831.9,675.9 L834.4,678.2 L830.2,684.2 L832.1,694.0 L845.3,705.0 L851.4,717.0 L852.3,725.5 L863.9,728.7 L865.8,734.1 L862.8,747.7 L871.6,751.2 L873.1,756.9 L858.7,781.2 L863.1,783.7 L860.6,789.9 L848.5,799.3 L836.9,794.6 L827.6,801.9 L810.5,796.9 L804.1,800.2 L799.6,808.9 L785.4,805.0 L767.2,816.3 L761.6,814.8 L760.1,796.1 L747.6,773.4 L730.2,764.0 L726.7,769.3 L720.6,769.0 L718.7,763.8 L722.8,755.3 L720.9,749.3 L710.5,737.8 L687.2,739.4 L664.5,713.1 L650.1,707.5 L635.7,695.3 L613.2,700.5 L604.0,696.4 L604.1,681.4 L600.4,672.8 L606.7,657.2 L607.0,648.5 L602.9,641.1 L590.6,636.0 L587.1,630.3 L598.3,599.0 L598.4,587.6 L603.3,576.8 L607.7,579.5 L610.0,557.0 L607.6,553.8 L596.5,554.3 L595.4,548.3 L588.4,551.5 L560.7,579.6 L558.5,586.8 L560.3,594.0 L558.3,606.9 L554.1,617.9 L504.3,639.5 L496.6,640.8 L455.7,629.6 L435.9,632.5 L417.9,623.6 L419.9,623.8 L417.0,611.2 L419.3,603.4 L438.2,589.2 L430.6,562.1 L416.3,561.7 L423.3,530.8 L435.9,515.7 L435.0,508.8 L425.9,503.0 L422.7,504.4 L421.0,511.6 L416.2,509.4 L409.1,494.1 L384.5,474.1 L356.7,481.7 L342.2,473.6 L320.1,473.2 L314.5,476.9 L305.0,492.7 L295.9,484.1 L291.4,432.8 L282.0,420.1 L253.7,415.9 L250.4,413.5 L253.4,405.7 L248.0,402.4 L217.8,414.7 L202.0,407.5 L194.5,399.6 L192.7,381.9 L183.8,347.0 L187.4,340.2 L184.4,330.4 L173.2,322.6 L157.7,296.3 L150.9,294.3 L116.7,305.1 L106.0,313.9 L94.8,330.2 L68.8,319.2 L44.2,284.1 L25.6,281.0 L16.8,269.1 L19.4,260.0 L14.3,241.9 L23.3,229.7 L22.5,221.5 L9.1,204.9 L0.0,169.3 Z';
+const KAART_PROV = 'M33,283 L17,269 L14,242 L22,221 L9,205 L0,169 L157,69 L215,50 L216,86 L228,105 L218,126 L231,139 L210,164 L239,185 L234,189 L241,203 L235,213 L239,219 L231,222 L244,229 L233,242 L245,245 L241,259 L257,273 L259,289 L218,325 L203,306 L166,308 L151,294 L130,301 L124,283 L109,289 L114,297 L103,305 L83,308 L90,329 L33,283ZM218,415 L194,400 L184,330 L166,308 L203,306 L218,325 L243,301 L263,302 L264,314 L289,320 L299,299 L321,296 L325,309 L354,308 L356,326 L365,333 L413,326 L407,333 L410,355 L432,344 L435,359 L470,382 L470,392 L491,383 L505,386 L506,398 L533,393 L529,413 L539,419 L532,434 L544,441 L536,451 L541,457 L536,483 L507,480 L458,509 L488,519 L487,538 L477,545 L487,562 L484,586 L499,630 L495,640 L418,624 L419,603 L438,589 L431,562 L416,562 L425,527 L436,516 L432,506 L416,509 L385,474 L357,482 L320,473 L305,493 L296,484 L291,433 L282,420 L254,416 L248,402 L218,415ZM599,556 L588,551 L561,580 L554,618 L495,640 L499,630 L484,586 L487,562 L477,545 L487,538 L488,519 L458,509 L507,480 L536,483 L541,457 L536,451 L544,441 L532,434 L539,419 L529,413 L532,386 L557,384 L557,366 L589,373 L630,350 L650,374 L657,393 L652,397 L680,405 L679,415 L700,425 L700,444 L720,465 L734,455 L747,465 L732,487 L743,484 L745,497 L697,525 L716,549 L706,559 L711,569 L667,576 L660,563 L656,588 L636,601 L646,620 L669,629 L674,644 L639,673 L635,695 L604,696 L600,673 L607,648 L587,630 L598,588 L608,580 L610,557 L599,556ZM693,741 L635,695 L639,673 L674,644 L669,629 L646,620 L636,601 L656,588 L660,563 L667,576 L711,569 L706,559 L716,549 L697,525 L745,497 L743,484 L732,487 L746,477 L745,459 L754,451 L750,439 L830,469 L826,483 L837,492 L830,507 L870,504 L863,498 L866,473 L906,487 L909,553 L893,547 L870,574 L852,613 L854,623 L829,661 L840,671 L833,670 L832,694 L852,725 L864,729 L863,748 L873,757 L861,790 L762,815 L748,773 L721,769 L721,749 L711,738 L693,741ZM913,553 L912,531 L905,525 L906,487 L897,479 L866,473 L863,498 L872,500 L852,510 L830,507 L837,492 L826,483 L830,469 L783,455 L775,441 L765,448 L750,439 L754,451 L745,459 L720,465 L700,444 L700,425 L679,415 L680,405 L652,397 L657,393 L650,374 L638,362 L648,328 L641,318 L648,307 L659,324 L687,330 L687,319 L723,321 L741,308 L761,320 L814,285 L825,290 L822,304 L845,308 L856,322 L873,323 L879,314 L875,308 L901,308 L906,325 L924,323 L944,361 L967,364 L945,393 L947,403 L957,416 L990,418 L990,464 L1000,486 L977,490 L973,505 L944,523 L946,540 L935,547 L933,565 L925,549 L913,553ZM228,104 L254,106 L258,89 L282,85 L326,100 L334,121 L365,120 L427,83 L441,53 L463,86 L459,99 L470,135 L466,151 L431,164 L433,187 L446,190 L440,210 L422,218 L425,234 L407,234 L406,254 L394,272 L403,279 L399,291 L369,298 L371,315 L362,317 L307,295 L289,320 L243,301 L260,286 L241,259 L245,245 L233,242 L244,229 L231,222 L239,219 L235,213 L241,203 L234,189 L239,185 L210,164 L231,139 L218,126 L228,104ZM582,-0 L598,15 L597,34 L581,34 L620,43 L646,9 L659,14 L661,50 L675,76 L694,78 L705,99 L699,118 L710,128 L711,144 L646,174 L638,191 L596,201 L588,189 L564,206 L560,195 L538,209 L507,209 L486,206 L482,193 L433,187 L432,162 L469,144 L459,99 L470,83 L459,77 L451,52 L485,60 L492,51 L482,22 L517,8 L522,12 L519,28 L547,32 L582,-0ZM786,116 L861,148 L857,156 L863,163 L843,181 L845,196 L831,222 L842,222 L805,266 L814,285 L772,317 L755,320 L741,308 L723,321 L687,319 L687,330 L669,325 L671,295 L683,283 L677,281 L679,267 L692,244 L659,239 L654,229 L676,205 L674,196 L684,196 L672,184 L660,198 L638,191 L646,174 L711,144 L710,128 L699,118 L705,99 L771,87 L786,116ZM410,326 L365,333 L355,322 L371,315 L369,298 L399,291 L403,279 L394,272 L406,254 L407,234 L425,234 L422,218 L440,210 L446,190 L482,193 L486,206 L507,209 L538,209 L560,195 L564,206 L588,189 L596,201 L635,186 L660,198 L672,184 L684,196 L674,196 L676,205 L654,229 L659,239 L692,244 L679,267 L677,281 L683,283 L671,295 L669,325 L638,300 L622,310 L619,300 L600,302 L578,284 L550,288 L549,311 L539,302 L520,317 L508,305 L479,322 L469,315 L458,331 L422,316 L410,326ZM410,326 L422,316 L458,331 L469,315 L479,322 L508,305 L520,317 L539,302 L549,311 L550,288 L578,284 L600,302 L619,300 L622,310 L638,300 L648,307 L639,352 L589,373 L557,366 L557,384 L537,382 L518,399 L491,383 L470,392 L470,382 L435,359 L432,344 L410,355 L410,326Z';
 const KAART_W = 1000, KAART_H = 816.3;
 /* Hoekpunten van het pad, in graden. */
 const KAART_LON0 = 2.5218, KAART_LON1 = 6.3745;
@@ -1244,6 +1258,8 @@ function renderKaart(){
 
   vak.innerHTML = `<svg viewBox="-40 -30 ${KAART_W+80} ${KAART_H+60}" preserveAspectRatio="xMidYMid meet">
     <path class="k-land" d="${KAART_PAD}"></path>
+    <path class="k-prov" d="${KAART_PROV}"></path>
+    <path class="k-rand" d="${KAART_PAD}"></path>
     ${steden}
     ${pinnen}
   </svg>`;
