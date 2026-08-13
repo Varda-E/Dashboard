@@ -41,7 +41,7 @@ const SHEET_URLS = {
      output=csv. Een deellink die op /edit eindigt werkt niet. */
   bezetting: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1193772928&single=true&output=csv",
   /* Tabblad "Uren": uren per werf, deze maand en totaal sinds 2026. */
-  uren:      "PLAK_HIER",
+  uren:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=31192058&single=true&output=csv",
 };
 
 /* ============================================================
@@ -495,22 +495,26 @@ function dagtipVanVandaag(){
     border-left:1px solid var(--card-border); padding-left:24px;
   }
   .kaart-legende > div{ transform-origin: top center; }
-  .k-land{ fill:var(--bg); stroke:none; }
+  .k-land{ fill:#ddd6c7; stroke:none; }
   body.nacht .k-land{ fill:#33363f; }
   .k-prov{
-    fill:none; stroke:var(--ink-soft); stroke-width:1.2;
-    stroke-linejoin:round; opacity:0.35;
+    fill:none; stroke:#fff; stroke-width:2;
+    stroke-linejoin:round; opacity:0.85;
   }
+  body.nacht .k-prov{ stroke:#22242b; opacity:0.7; }
   .k-rand{
-    fill:none; stroke:var(--ink-soft); stroke-width:2.4;
-    stroke-linejoin:round; opacity:0.75;
+    fill:none; stroke:#8d8579; stroke-width:2.6;
+    stroke-linejoin:round;
   }
-  body.nacht .k-prov, body.nacht .k-rand{ stroke:#6b7280; }
-  .k-stad{ fill:var(--ink-soft); opacity:0.45; }
+  body.nacht .k-rand{ stroke:#6b7280; }
+  .k-stad{ fill:#7a7266; opacity:0.7; }
+  body.nacht .k-stad{ fill:#9aa3ae; }
   .k-stadnaam{
-    font-family:'Inter',sans-serif; font-size:15px; font-weight:500;
-    fill:var(--ink-soft); opacity:0.75;
+    font-family:'Inter',sans-serif; font-size:16px; font-weight:500;
+    fill:#6e6659; paint-order:stroke; stroke:#ddd6c7; stroke-width:4px;
+    stroke-linejoin:round;
   }
+  body.nacht .k-stadnaam{ fill:#9aa3ae; stroke:#33363f; }
   .k-pin{ fill:var(--red); stroke:var(--card); stroke-width:3; }
   .k-pin.intern{ fill:var(--brown); }
   .k-pin.onderweg{ fill:var(--ink-soft); }
@@ -1219,14 +1223,8 @@ function renderKaart(){
     return;
   }
 
-  const steden = KAART_STEDEN.map(s=>{
-    const p = projecteer(s.lat, s.lon);
-    return `<circle class="k-stad" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5"></circle>
-            <text class="k-stadnaam" x="${(p.x+11).toFixed(1)}" y="${(p.y+5).toFixed(1)}">${esc(s.naam)}</text>`;
-  }).join('');
-
-  /* Stippen die te dicht op elkaar liggen, worden iets uit elkaar
-     geduwd zodat de nummers leesbaar blijven. */
+  /* Eerst de stippen plaatsen; steden die eronder verdwijnen
+     laten we weg, anders wordt het onleesbaar. */
   const geplaatst = [];
   const pinnen = punten.map((g,i)=>{
     const r = Math.min(19 + g.mensen.length * 2, 30);
@@ -1236,7 +1234,7 @@ function renderKaart(){
       let botst = false;
       for(const q of geplaatst){
         const dx = x - q.x, dy = y - q.y;
-        const min = r + q.r + 5;
+        const min = r + q.r + 6;
         if(dx*dx + dy*dy < min*min){
           const d = Math.sqrt(dx*dx + dy*dy) || 0.01;
           x += (dx/d) * (min - d) * 0.6;
@@ -1254,6 +1252,20 @@ function renderKaart(){
 
     return lijn + `<circle class="k-pin ${esc(g.soort)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}"></circle>
       <text class="k-pinnr" x="${x.toFixed(1)}" y="${y.toFixed(1)}" style="font-size:${Math.round(r*0.85)}px">${i+1}</text>`;
+  }).join('');
+
+  const steden = KAART_STEDEN.map(st=>{
+    const p = projecteer(st.lat, st.lon);
+    const breedte = st.naam.length * 8.5 + 14;
+    /* Valt het label onder een stip, dan laten we de stad weg. */
+    const bedekt = geplaatst.some(q=>{
+      const dx = Math.max(0, Math.abs((p.x + breedte/2 + 6) - q.x) - breedte/2);
+      const dy = Math.abs(p.y - q.y);
+      return dx < q.r + 8 && dy < q.r + 12;
+    });
+    if(bedekt) return '';
+    return `<circle class="k-stad" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5"></circle>
+            <text class="k-stadnaam" x="${(p.x+12).toFixed(1)}" y="${(p.y+5.5).toFixed(1)}">${esc(st.naam)}</text>`;
   }).join('');
 
   vak.innerHTML = `<svg viewBox="-40 -30 ${KAART_W+80} ${KAART_H+60}" preserveAspectRatio="xMidYMid meet">
