@@ -1096,7 +1096,7 @@ function renderKaart(){
       boxZoom: false, keyboard: false, touchZoom: false
     }).setView([50.9, 4.5], 8);
 
-    const tegels = L.tileLayer('https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    const tegels = L.tileLayer('https://basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap, &copy; CARTO', maxZoom: 19
     }).addTo(kaartObject);
 
