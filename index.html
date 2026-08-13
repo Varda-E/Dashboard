@@ -40,6 +40,8 @@ const SHEET_URLS = {
   /* LET OP: dit moet een publicatielink zijn — die bevat /pub? en
      output=csv. Een deellink die op /edit eindigt werkt niet. */
   bezetting: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1193772928&single=true&output=csv",
+  /* Tabblad "Uren": uren per werf, deze maand en totaal sinds 2026. */
+  uren:      "PLAK_HIER",
 };
 
 /* ============================================================
@@ -71,6 +73,7 @@ const BEURS_SYMBOLEN = [
 let VERLOF = [];
 
 let BEZETTING = [];
+let UREN = [];
 
 let DAGTIPS = [];
 /* Elke dag één tip, in een volgorde die per ronde geschud wordt:
@@ -441,6 +444,37 @@ function dagtipVanVandaag(){
   .bez-persoon .nm{ font-weight:600; }
   .bez-leeg{ font-size:15px; color:var(--ink-soft); text-align:center; padding:26px; }
 
+  /* ---------- UREN PER WERF ---------- */
+  .uren-vak{ width:94vw; max-width:1700px; height:74vh; overflow:hidden; }
+  .uren-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:0 44px;
+    width:100%; transform-origin: top center;
+  }
+  .uren-rij{
+    display:grid; grid-template-columns: 1fr auto;
+    align-items:baseline; gap:16px;
+    padding:9px 4px 7px 4px; border-bottom:1px solid var(--card-border);
+  }
+  .uren-naam{ font-weight:600; font-size:17px; line-height:1.25; }
+  .uren-code{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    color:var(--ink-soft); margin-left:9px; font-weight:400;
+  }
+  .uren-cijfers{ text-align:right; white-space:nowrap; }
+  .uren-maand{
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:19px; color:var(--red);
+  }
+  .uren-totaal{
+    font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--ink-soft); margin-left:9px;
+  }
+  .uren-balk{
+    grid-column:1 / -1; height:6px; border-radius:3px;
+    background:rgba(188,23,2,0.10); margin-top:6px; overflow:hidden;
+  }
+  .uren-balk i{ display:block; height:100%; background:var(--red); border-radius:3px; }
+  .uren-leeg{ font-size:16px; color:var(--ink-soft); text-align:center; padding:30px; }
+
   /* ---------- KAART ----------
      Platte SVG: geen bibliotheek, geen tegels, geen externe
      verzoeken. Werkt daardoor op vrijwel elke browser. */
@@ -619,7 +653,7 @@ function dagtipVanVandaag(){
 
 <div class="rotatie-dots" id="rotatie-dots">
   <div class="dot actief"></div><div class="dot"></div><div class="dot"></div>
-  <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
 </div>
 
 <button class="cfg-btn" onclick="cfgOpen()" title="Gegevens beheren">⚙️</button>
@@ -646,6 +680,10 @@ function dagtipVanVandaag(){
       <div id="kaart"></div>
       <div class="kaart-legende" id="kaart-legende"></div>
     </div>
+  </div>
+  <div class="rotatie-slide" id="slide-uren">
+    <div class="rotatie-titel">⏱️ <span>Uren per werf</span><span class="telling" id="uren-telling"></span></div>
+    <div class="uren-vak"><div class="uren-grid" id="uren-grid"></div></div>
   </div>
   <div class="rotatie-slide" id="slide-beurs">
     <div class="rotatie-titel">📈 <span>Markten</span></div>
@@ -805,13 +843,14 @@ async function laadUitSheet(){
 
   mislukteTabbladen = [];
   try{
-    const [aanb, verlof, verj, tips, med, bezetting] = await Promise.all([
+    const [aanb, verlof, verj, tips, med, bezetting, uren] = await Promise.all([
       haalVeilig('aanbestedingen', urls.aanb,      bruikbaar),
       haalVeilig('verlof',         urls.verlof,    bruikbaar),
       haalVeilig('verjaardagen',   urls.verj,      bruikbaar),
       haalVeilig('tips',           urls.tips,      bruikbaar),
       haalVeilig('mededelingen',   urls.med,       bruikbaar),
       haalVeilig('bezetting',      urls.bezetting, bruikbaar),
+      haalVeilig('uren',           urls.uren,      bruikbaar),
     ]);
 
     /* Een leeg tabblad mag bestaande gegevens niet wissen. */
@@ -859,6 +898,16 @@ async function laadUitSheet(){
       })).filter(x => x.naam && x.werf);
       if(r.length) BEZETTING = r;
     }
+    if(uren && uren.length){
+      const r = uren.map(x => ({
+        code:   x.code || '',
+        werf:   x.werf || '',
+        maand:  normGetal(x.uren_maand)  || 0,
+        totaal: normGetal(x.uren_totaal) || 0,
+        laatste: x.laatste_dag || ''
+      })).filter(x => x.werf && x.maand > 0);
+      if(r.length) UREN = r;
+    }
 
     sheetStatus = mislukteTabbladen.length ? 'deels' : 'ok';
     laatsteVerversing = new Date();
@@ -872,6 +921,7 @@ async function laadUitSheet(){
   renderVerlofPagina();
   renderBezetting();
   renderKaart();
+  renderUren();
   toonDagtip();
 }
 
@@ -1054,6 +1104,45 @@ function renderBezetting(){
   pasPassend(wrap, wrap.parentElement);
 }
 
+/* ---------------- UREN PER WERF ----------------
+   Toont enkel werven waar deze maand uren bij kwamen. De balk is
+   relatief aan de grootste van de maand; het kleine getal is het
+   totaal sinds begin 2026. */
+function renderUren(){
+  const wrap = document.getElementById('uren-grid');
+  if(!wrap) return;
+  const telling = document.getElementById('uren-telling');
+
+  const rijen = [...UREN].sort((a,b)=> b.maand - a.maand);
+  if(!rijen.length){
+    if(telling) telling.textContent = '';
+    wrap.innerHTML = `<div class="uren-leeg">Nog geen uren in de Sheet.</div>`;
+    return;
+  }
+
+  const totaalMaand = rijen.reduce((n,r)=> n + r.maand, 0);
+  const grootste = rijen[0].maand || 1;
+  const maandNaam = new Date().toLocaleDateString('nl-BE', { month:'long' });
+  if(telling){
+    telling.textContent = maandNaam + ' · ' + Math.round(totaalMaand) + ' uur · '
+                        + rijen.length + (rijen.length === 1 ? ' werf' : ' werven');
+  }
+
+  const getal = n => n.toLocaleString('nl-BE', { maximumFractionDigits: 0 });
+
+  wrap.innerHTML = rijen.map(r=>`
+    <div class="uren-rij">
+      <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
+      <div class="uren-cijfers">
+        <span class="uren-maand">${getal(r.maand)} u</span>
+        <span class="uren-totaal">${getal(r.totaal)} tot.</span>
+      </div>
+      <div class="uren-balk"><i style="width:${Math.max(2, r.maand / grootste * 100).toFixed(1)}%"></i></div>
+    </div>`).join('');
+
+  pasPassend(wrap, wrap.parentElement);
+}
+
 /* ---------------- KAART (SVG, geen bibliotheek) ----------------
    De omtrek van België is een vast SVG-pad in webmercator-projectie.
    Coördinaten worden met dezelfde projectie omgerekend, zodat de
@@ -1231,6 +1320,7 @@ function cfgRender(){
     <div class="cfg-rij"><span>Tips</span><span class="mono">${DAGTIPS.length} rijen</span></div>
     <div class="cfg-rij"><span>Mededelingen</span><span class="mono">${DATA.med.length} rijen</span></div>
     <div class="cfg-rij"><span>Bezetting</span><span class="mono">${BEZETTING.length} rijen</span></div>
+    <div class="cfg-rij"><span>Uren</span><span class="mono">${UREN.length} rijen</span></div>
     <div class="cfg-note" style="margin-top:18px;">
       Klopt er iets niet? Controleer in de Sheet of de kolomkoppen op rij 1
       nog juist staan en of de datums als <b>JJJJ-MM-DD</b> zijn ingevuld.
@@ -1509,6 +1599,7 @@ function toonDagtip(){
 renderAll();
 renderVerlofPagina();
 renderBezetting();
+renderUren();
 toonDagtip();
 toonBronLabel();
 laadUitSheet();
@@ -1524,6 +1615,7 @@ function herbereken(){
   renderVerlofPagina();
   renderBezetting();
   renderKaart();
+  renderUren();
   const grid = document.getElementById('beurs-grid');
   if(grid) pasPassend(grid, grid.parentElement);
 }
@@ -1533,7 +1625,7 @@ window.addEventListener('resize', ()=>{
 });
 
 /* ---------------- ROTATIE ---------------- */
-const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'beurs', 'verlof', 'dagtip'];
+const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'uren', 'beurs', 'verlof', 'dagtip'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
@@ -1544,6 +1636,7 @@ function rotatieVolgende(){
   overlay.classList.toggle('tonen', fase !== 'dashboard');
   document.getElementById('slide-bezetting').classList.toggle('tonen', fase === 'bezetting');
   document.getElementById('slide-kaart').classList.toggle('tonen', fase === 'kaart');
+  document.getElementById('slide-uren').classList.toggle('tonen', fase === 'uren');
   document.getElementById('slide-beurs').classList.toggle('tonen', fase === 'beurs');
   document.getElementById('slide-verlof').classList.toggle('tonen', fase === 'verlof');
   document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
@@ -1554,6 +1647,7 @@ function rotatieVolgende(){
   if(fase === 'kaart')     renderKaart();
   if(fase === 'bezetting') renderBezetting();
   if(fase === 'verlof')    renderVerlofPagina();
+  if(fase === 'uren')      renderUren();
   if(fase === 'beurs'){
     const grid = document.getElementById('beurs-grid');
     if(grid) pasPassend(grid, grid.parentElement);
