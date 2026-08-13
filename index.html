@@ -1089,8 +1089,8 @@ function renderKaart(){
       boxZoom: false, keyboard: false, touchZoom: false
     }).setView([50.9, 4.5], 8);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap, &copy; CARTO', maxZoom: 19
+     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap', maxZoom: 19
     }).addTo(kaartObject);
 
     kaartLaag = L.layerGroup().addTo(kaartObject);
