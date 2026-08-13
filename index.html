@@ -678,7 +678,7 @@ function dagtipVanVandaag(){
     <div class="bez-grid" id="bez-grid"></div>
   </div>
   <div class="rotatie-slide" id="slide-kaart">
-    <div class="rotatie-titel">📍 <span>Werven vandaag</span><span class="telling" id="kaart-telling"></span></div>
+    <div class="rotatie-titel">📍 <span>Werven vandaag — v2</span><span class="telling" id="kaart-telling"></span></div>
     <div class="kaart-wrap">
       <div id="kaart"></div>
       <div class="kaart-legende" id="kaart-legende"></div>
@@ -1055,6 +1055,13 @@ function renderBezetting(){
    verkeerd op. */
 let kaartObject = null;
 let kaartLaag = null;
+let tegelsOk = 0, tegelsFout = 0;
+
+/* TIJDELIJKE DIAGNOSE — verwijderbaar zodra de kaart werkt. */
+function toonTegelStand(){
+  const t = document.getElementById('kaart-telling');
+  if(t) t.textContent = 'tegels ok:' + tegelsOk + ' fout:' + tegelsFout;
+}
 
 function renderKaart(){
   const vak = document.getElementById('kaart');
@@ -1067,8 +1074,6 @@ function renderKaart(){
   }
 
   const punten = groepeerBezetting().filter(g => g.lat !== null && g.lon !== null);
-  const telling = document.getElementById('kaart-telling');
-  if(telling) telling.textContent = punten.length ? `${punten.length} locaties` : '';
 
   if(legende){
     legende.innerHTML = punten.map((g,i)=>`
@@ -1089,10 +1094,19 @@ function renderKaart(){
       boxZoom: false, keyboard: false, touchZoom: false
     }).setView([50.9, 4.5], 8);
 
-         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap', maxZoom: 19
+    const tegels = L.tileLayer('https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap, &copy; CARTO', maxZoom: 19
     }).addTo(kaartObject);
-       
+
+    /* TIJDELIJKE DIAGNOSE — mag weg zodra de kaart werkt.
+       Toont boven de kaart hoeveel tegels binnenkomen of falen.
+         ok:0  fout:0   -> Leaflet probeert niets te laden
+         ok:0  fout:20  -> het netwerk of de tv weigert de tegels
+         ok:20 fout:0   -> tegels komen binnen maar worden niet getoond */
+    tegelsOk = 0; tegelsFout = 0;
+    tegels.on('tileload',  ()=>{ tegelsOk++;   toonTegelStand(); });
+    tegels.on('tileerror', ()=>{ tegelsFout++; toonTegelStand(); });
+
     kaartLaag = L.layerGroup().addTo(kaartObject);
   }
 
