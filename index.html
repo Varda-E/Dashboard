@@ -286,6 +286,7 @@ function dagtipVanVandaag(){
   }
   .cfg-btn:hover{ opacity:1; }
   .rotatie-btn{ right:76px; z-index:41; }
+  .terug-btn{ right:130px; z-index:41; }
 
   .cfg-overlay{
     position:fixed; inset:0; background:rgba(62,61,68,0.45);
@@ -450,6 +451,19 @@ function dagtipVanVandaag(){
     display:grid; grid-template-columns:1fr 1fr; gap:0 48px;
     width:100%; transform-origin: top center;
   }
+  .uren-kopblok{
+    grid-column:1 / -1;
+    display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:15px;
+    letter-spacing:0.07em; text-transform:uppercase; color:var(--red);
+    border-bottom:2px solid var(--red); padding:0 4px 7px 4px;
+    margin:22px 0 4px 0;
+  }
+  .uren-kopblok:first-child{ margin-top:0; }
+  .uren-kopblok span{
+    font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:12.5px;
+    letter-spacing:0; text-transform:none; color:var(--ink-soft);
+  }
   .uren-rij{ padding:10px 4px 12px 4px; border-bottom:1px solid var(--card-border); }
   .uren-kop{
     display:flex; align-items:baseline; justify-content:space-between;
@@ -470,9 +484,6 @@ function dagtipVanVandaag(){
     background:rgba(188,23,2,0.10); overflow:hidden;
   }
   .uren-balk i{ display:block; height:100%; background:var(--red); border-radius:5px; }
-  /* Werven van vóór 2026: het aandeel is dan niet volledig. */
-  .uren-rij.ouder .uren-balk i{ opacity:0.45; }
-  .uren-rij.ouder .uren-code::after{ content:' ·2025'; opacity:0.7; }
   .uren-leeg{ font-size:16px; color:var(--ink-soft); text-align:center; padding:30px; }
 
   /* ---------- KAART ----------
@@ -672,6 +683,7 @@ function dagtipVanVandaag(){
 
 <button class="cfg-btn" onclick="cfgOpen()" title="Gegevens beheren">⚙️</button>
 <button class="cfg-btn rotatie-btn" onclick="rotatieVolgende(); rotatieHerstart();" title="Volgend scherm">⏭️</button>
+<button class="cfg-btn terug-btn" onclick="rotatieVorige(); rotatieHerstart();" title="Vorig scherm">⏮️</button>
 
 <div class="cfg-overlay" id="cfg-overlay">
   <div class="cfg-modal">
@@ -1142,20 +1154,34 @@ function renderUren(){
   }
 
   const getal = n => n.toLocaleString('nl-BE', { maximumFractionDigits: 0 });
+  /* Nieuw = alle geregistreerde uren van deze werf vielen deze
+     maand. Het S-nummer zegt niets over de start: dat is het jaar
+     van de verkoop, niet van de uitvoering. */
+  const isNieuw = r => r.totaal > 0 && r.maand >= r.totaal - 0.05;
 
-  wrap.innerHTML = rijen.map(r=>{
-    const deel = r.totaal > 0 ? Math.min(100, r.maand / r.totaal * 100) : 0;
-    /* Werven met een S25-nummer liepen al in 2025; hun totaal telt
-       hier enkel vanaf januari 2026, dus het aandeel oogt te hoog. */
-    const ouder = /^S25\//.test(r.code);
-    return `<div class="uren-rij ${ouder ? 'ouder' : ''}">
-      <div class="uren-kop">
-        <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
-        <div class="uren-cijfers"><b>${getal(r.maand)} u</b> deze maand · ${getal(r.totaal)} u tot.</div>
-      </div>
-      <div class="uren-balk"><i style="width:${Math.max(1.5, deel).toFixed(1)}%"></i></div>
-    </div>`;
-  }).join('');
+  const nieuw  = rijen.filter(isNieuw);
+  const lopend = rijen.filter(r => !isNieuw(r));
+
+  function blok(titel, lijst, aantalTekst){
+    if(!lijst.length) return '';
+    const uren = lijst.reduce((n,r)=> n + r.maand, 0);
+    const kop = `<div class="uren-kopblok">${esc(titel)}
+      <span>${lijst.length} ${aantalTekst} · ${getal(uren)} u</span></div>`;
+    return kop + lijst.map(r=>{
+      const deel = r.totaal > 0 ? Math.min(100, r.maand / r.totaal * 100) : 0;
+      return `<div class="uren-rij">
+        <div class="uren-kop">
+          <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
+          <div class="uren-cijfers"><b>${getal(r.maand)} u</b> deze maand · ${getal(r.totaal)} u tot.</div>
+        </div>
+        <div class="uren-balk"><i style="width:${Math.max(1.5, deel).toFixed(1)}%"></i></div>
+      </div>`;
+    }).join('');
+  }
+
+  wrap.innerHTML =
+      blok('Opgestart deze maand', nieuw,  nieuw.length === 1 ? 'werf' : 'werven')
+    + blok('Reeds lopend',        lopend, lopend.length === 1 ? 'werf' : 'werven');
 
   pasPassend(wrap, wrap.parentElement);
 }
@@ -1652,12 +1678,16 @@ window.addEventListener('resize', ()=>{
 });
 
 /* ---------------- ROTATIE ---------------- */
-const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'uren', 'beurs', 'verlof', 'dagtip'];
+const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'uren', 'verlof', 'dagtip', 'beurs'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
-function rotatieVolgende(){
-  rotatieIndex = (rotatieIndex + 1) % rotatieFases.length;
+function rotatieVolgende(){ rotatieNaar(rotatieIndex + 1); }
+function rotatieVorige(){   rotatieNaar(rotatieIndex - 1); }
+
+function rotatieNaar(index){
+  const n = rotatieFases.length;
+  rotatieIndex = ((index % n) + n) % n;
   const fase = rotatieFases[rotatieIndex];
   const overlay = document.getElementById('rotatie-overlay');
   overlay.classList.toggle('tonen', fase !== 'dashboard');
