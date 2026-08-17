@@ -46,6 +46,10 @@ const SHEET_URLS = {
      Odoo staan (bestuurders, onderaannemers). Wordt samengevoegd
      met het tabblad Verjaardagen. */
   verjExtra: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=202613051&single=true&output=csv",
+  /* Tabblad "Wagenpark": keuringsdatums uit Odoo. Voertuigen
+     waarvan de keuring binnenkort vervalt, verschijnen in de
+     mededelingenbalk. */
+  wagens:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=144218018&single=true&output=csv",
 };
 
 /* ============================================================
@@ -78,6 +82,7 @@ let VERLOF = [];
 
 let BEZETTING = [];
 let UREN = [];
+let WAGENS = [];
 
 let DAGTIPS = [];
 /* Elke dag één tip, in een volgorde die per ronde geschud wordt:
@@ -202,10 +207,22 @@ function dagtipVanVandaag(){
     padding:0 20px; white-space:nowrap;
   }
   .mededelingen-lijst{
-    flex:1; display:flex; align-items:center; gap:28px;
-    padding:14px 22px; overflow:hidden;
+    flex:1; overflow:hidden; padding:14px 0; position:relative;
+    display:flex; align-items:center;
   }
+  /* De inhoud staat twee keer achter elkaar; de tweede reeks
+     schuift precies in beeld wanneer de eerste eruit loopt, zodat
+     de lus naadloos is. Past alles in één keer, dan staat hij stil. */
+  .med-loop{
+    display:flex; align-items:center; gap:28px;
+    padding-left:22px; white-space:nowrap; flex-shrink:0;
+  }
+  .med-loop.rijdt{ animation: medRol linear infinite; }
+  @keyframes medRol{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
   .mededeling-item{ display:flex; align-items:baseline; gap:9px; font-size:16px; white-space:nowrap; }
+  /* Keuringen vallen op tussen de gewone mededelingen. */
+  .mededeling-item.keuring .tekst{ color:var(--red); font-weight:700; }
+  .mededeling-item.keuring.verlopen .tekst{ text-decoration:underline; }
   .mededeling-item .tekst{ font-weight:500; color:var(--ink); }
   .mededeling-item .datum{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); }
   .mededeling-sep{ color:var(--card-border); }
@@ -648,7 +665,9 @@ function dagtipVanVandaag(){
 
   <div class="mededelingen">
     <div class="mededelingen-label">📣 Mededelingen</div>
-    <div class="mededelingen-lijst" id="mededelingen-lijst"></div>
+    <div class="mededelingen-lijst" id="mededelingen-lijst">
+      <div class="med-loop" id="med-loop"></div>
+    </div>
   </div>
 
   <main>
@@ -875,7 +894,7 @@ async function laadUitSheet(){
 
   mislukteTabbladen = [];
   try{
-    const [aanb, verlof, verj, tips, med, bezetting, uren, verjExtra] = await Promise.all([
+    const [aanb, verlof, verj, tips, med, bezetting, uren, verjExtra, wagens] = await Promise.all([
       haalVeilig('aanbestedingen', urls.aanb,      bruikbaar),
       haalVeilig('verlof',         urls.verlof,    bruikbaar),
       haalVeilig('verjaardagen',   urls.verj,      bruikbaar),
@@ -884,6 +903,7 @@ async function laadUitSheet(){
       haalVeilig('bezetting',      urls.bezetting, bruikbaar),
       haalVeilig('uren',           urls.uren,      bruikbaar),
       haalVeilig('verj. extra',    urls.verjExtra, bruikbaar),
+      haalVeilig('wagenpark',      urls.wagens,    bruikbaar),
     ]);
 
     /* Een leeg tabblad mag bestaande gegevens niet wissen. */
@@ -953,6 +973,16 @@ async function laadUitSheet(){
         laatste: x.laatste_dag || ''
       })).filter(x => x.werf && x.maand > 0);
       if(r.length) UREN = r;
+    }
+    if(wagens && wagens.length){
+      const r = wagens.map(x => ({
+        wagen:  x.wagen  || '',
+        plaat:  x.plaat  || '',
+        chauffeur: x.chauffeur || '',
+        vervalt: normDatum(x.vervalt),
+        status: (x.status || '').toLowerCase()
+      })).filter(x => x.plaat);
+      if(r.length) WAGENS = r;
     }
 
     sheetStatus = mislukteTabbladen.length ? 'deels' : 'ok';
@@ -1056,18 +1086,85 @@ function renderVerjaardagen(){
   }).join('');
 }
 
+/* Hoeveel weken vooraf een keuring in de balk verschijnt. */
+const KEURING_WEKEN = 6;
+
+/* Voertuigen waarvan de keuring binnen dat venster valt of al
+   verlopen is. Verlopen eerst, daarna op datum. */
+function keuringMeldingen(){
+  const nu = new Date();
+  const vandaag = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate());
+  const grens = new Date(vandaag);
+  grens.setDate(grens.getDate() + KEURING_WEKEN * 7);
+
+  const lokaleDatum = t => {
+    const [jj, mm, dd] = String(t).split('-').map(Number);
+    return (jj && mm && dd) ? new Date(jj, mm-1, dd) : null;
+  };
+
+  return WAGENS
+    .map(w => ({ ...w, d: lokaleDatum(w.vervalt) }))
+    .filter(w => w.d && w.d <= grens)
+    .sort((a,b) => a.d - b.d)
+    .map(w => {
+      const verlopen = w.d < vandaag;
+      const datumFmt = w.d.toLocaleDateString('nl-BE', { day:'numeric', month:'long' });
+      const wie = w.chauffeur ? ' (' + w.chauffeur + ')' : '';
+      return {
+        keuring: true,
+        verlopen,
+        tekst: verlopen
+          ? '🔧 ' + w.plaat + wie + ' — keuring vervallen sinds ' + datumFmt
+          : '🔧 ' + w.plaat + wie + ' — naar de keuring voor ' + datumFmt,
+        datum: ''
+      };
+    });
+}
+
 function renderMededelingen(){
-  const items = [...DATA.med].sort((a,b)=> new Date(b.datum) - new Date(a.datum)).slice(0,3);
+  const loop = document.getElementById('med-loop');
+  const vak  = document.getElementById('mededelingen-lijst');
+  if(!loop) return;
+
+  const gewoon = [...DATA.med]
+    .sort((a,b)=> new Date(b.datum) - new Date(a.datum))
+    .slice(0,4)
+    .map(m => ({
+      keuring: false, verlopen: false,
+      tekst: m.tekst,
+      datum: new Date(m.datum).toLocaleDateString('nl-BE', { day:'numeric', month:'short' })
+    }));
+
+  /* Keuringen eerst: die vragen om actie, mededelingen niet. */
+  const items = keuringMeldingen().concat(gewoon);
+
   if(!items.length){
-    document.getElementById('mededelingen-lijst').innerHTML =
-      `<div class="mededeling-item"><span class="tekst" style="color:var(--ink-soft);font-weight:400">Geen mededelingen.</span></div>`;
+    loop.className = 'med-loop';
+    loop.innerHTML = `<div class="mededeling-item"><span class="tekst" style="color:var(--ink-soft);font-weight:400">Geen mededelingen.</span></div>`;
     return;
   }
-  document.getElementById('mededelingen-lijst').innerHTML = items.map((m,i)=>{
-    const datumFmt = new Date(m.datum).toLocaleDateString('nl-BE', { day:'numeric', month:'short' });
-    const sep = i < items.length-1 ? '<span class="mededeling-sep">•</span>' : '';
-    return `<div class="mededeling-item"><span class="tekst">${esc(m.tekst)}</span><span class="datum">${datumFmt}</span></div>${sep}`;
-  }).join('');
+
+  const eenReeks = items.map(m =>
+    `<div class="mededeling-item ${m.keuring ? 'keuring' : ''} ${m.verlopen ? 'verlopen' : ''}">
+       <span class="tekst">${esc(m.tekst)}</span>
+       ${m.datum ? `<span class="datum">${esc(m.datum)}</span>` : ''}
+     </div><span class="mededeling-sep">•</span>`).join('');
+
+  /* Twee keer dezelfde reeks: de lus schuift de helft op en begint
+     dan visueel opnieuw, zonder zichtbare sprong. */
+  loop.className = 'med-loop';
+  loop.innerHTML = eenReeks + eenReeks;
+
+  /* Past alles in één keer, dan hoeft er niets te rollen. */
+  const nodig = loop.scrollWidth / 2;
+  if(nodig > vak.clientWidth - 22){
+    const seconden = Math.max(12, Math.round(nodig / 45));   // ± 45 px per seconde
+    loop.style.animationDuration = seconden + 's';
+    loop.classList.add('rijdt');
+  } else {
+    loop.style.animationDuration = '';
+    loop.innerHTML = eenReeks;
+  }
 }
 
 function renderAll(){ renderAanbestedingen(); renderVerjaardagen(); renderMededelingen(); }
