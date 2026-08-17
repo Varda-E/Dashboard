@@ -42,6 +42,10 @@ const SHEET_URLS = {
   bezetting: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1193772928&single=true&output=csv",
   /* Tabblad "Uren": uren per werf, deze maand en totaal sinds 2026. */
   uren:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=31192058&single=true&output=csv",
+  /* Tabblad "VerjaardagenExtra": mensen die niet als werknemer in
+     Odoo staan (bestuurders, onderaannemers). Wordt samengevoegd
+     met het tabblad Verjaardagen. */
+  verjExtra: "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=202613051&single=true&output=csv",
 };
 
 /* ============================================================
@@ -871,7 +875,7 @@ async function laadUitSheet(){
 
   mislukteTabbladen = [];
   try{
-    const [aanb, verlof, verj, tips, med, bezetting, uren] = await Promise.all([
+    const [aanb, verlof, verj, tips, med, bezetting, uren, verjExtra] = await Promise.all([
       haalVeilig('aanbestedingen', urls.aanb,      bruikbaar),
       haalVeilig('verlof',         urls.verlof,    bruikbaar),
       haalVeilig('verjaardagen',   urls.verj,      bruikbaar),
@@ -879,6 +883,7 @@ async function laadUitSheet(){
       haalVeilig('mededelingen',   urls.med,       bruikbaar),
       haalVeilig('bezetting',      urls.bezetting, bruikbaar),
       haalVeilig('uren',           urls.uren,      bruikbaar),
+      haalVeilig('verj. extra',    urls.verjExtra, bruikbaar),
     ]);
 
     /* Een leeg tabblad mag bestaande gegevens niet wissen. */
@@ -896,11 +901,24 @@ async function laadUitSheet(){
       })).filter(x => x.naam && x.van && x.tot);
       if(r.length) VERLOF = r;
     }
-    if(verj && verj.length){
-      const r = verj.map(x => ({
-        naam: x.naam || '', datum: normMMDD(x.datum)
-      })).filter(x => x.naam && /^\d{2}-\d{2}$/.test(x.datum));
-      if(r.length) DATA.verj = r;
+    /* Twee bronnen: het tabblad uit Odoo en de handmatige
+       aanvulling voor wie daar niet in staat. Dubbele namen
+       tellen één keer; de eerste lijst wint. */
+    if((verj && verj.length) || (verjExtra && verjExtra.length)){
+      const opgehaald = [];
+      const gezien = {};
+      [verj, verjExtra].forEach(lijst => {
+        (lijst || []).forEach(x => {
+          const naam = (x.naam || '').trim();
+          const datum = normMMDD(x.datum);
+          if(!naam || !/^\d{2}-\d{2}$/.test(datum)) return;
+          const sleutel = naam.toLowerCase();
+          if(gezien[sleutel]) return;
+          gezien[sleutel] = true;
+          opgehaald.push({ naam, datum });
+        });
+      });
+      if(opgehaald.length) DATA.verj = opgehaald;
     }
     if(tips && tips.length){
       const r = tips.map(x => x.tekst || '').filter(t => t !== '');
