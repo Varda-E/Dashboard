@@ -1648,7 +1648,11 @@ function renderVerlofPagina(){
           if(type !== 'ziek') type = v.type;
         }
       });
-      const klasse = isFeestdag ? 'feestdag' : (type ? type : (isWeekend ? 'weekend' : ''));
+      /* Weekends blijven grijs: een verlofperiode die eroverheen
+         loopt zegt niets over zaterdag en zondag. */
+      const klasse = isFeestdag ? 'feestdag'
+                   : isWeekend  ? 'weekend'
+                   : (type || '');
       svg += `<rect x="${dagX(i)}" y="${y+5}" width="${celBreedte}" height="${rijHoogte-10}" rx="4" class="g-cel ${klasse}"></rect>`;
     });
   });
