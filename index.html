@@ -469,7 +469,7 @@ function dagtipVanVandaag(){
   /* ---------- UREN PER WERF ---------- */
   .uren-vak{ width:94vw; max-width:1700px; height:74vh; overflow:hidden; }
   .uren-grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:0 48px;
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 36px;
     width:100%; transform-origin: top center;
   }
   .uren-kopblok{
@@ -485,23 +485,23 @@ function dagtipVanVandaag(){
     font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:12.5px;
     letter-spacing:0; text-transform:none; color:var(--ink-soft);
   }
-  .uren-rij{ padding:10px 4px 12px 4px; border-bottom:1px solid var(--card-border); }
+  .uren-rij{ padding:9px 4px 11px 4px; border-bottom:1px solid var(--card-border); }
   .uren-kop{
     display:flex; align-items:baseline; justify-content:space-between;
-    gap:16px; margin-bottom:7px;
+    gap:10px; margin-bottom:6px; flex-wrap:wrap;
   }
-  .uren-naam{ font-weight:600; font-size:17px; line-height:1.25; }
+  .uren-naam{ font-weight:600; font-size:15.5px; line-height:1.25; }
   .uren-code{
-    font-family:'IBM Plex Mono',monospace; font-size:11.5px;
-    color:var(--ink-soft); margin-left:9px; font-weight:400;
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    color:var(--ink-soft); margin-left:7px; font-weight:400;
   }
   .uren-cijfers{
-    font-family:'IBM Plex Mono',monospace; font-size:13px;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px;
     color:var(--ink-soft); white-space:nowrap;
   }
   .uren-cijfers b{ color:var(--red); font-weight:600; }
   .uren-balk{
-    height:9px; border-radius:5px;
+    height:8px; border-radius:5px;
     background:rgba(188,23,2,0.10); overflow:hidden;
   }
   .uren-balk i{ display:block; height:100%; background:var(--red); border-radius:5px; }
@@ -1250,7 +1250,8 @@ function renderBezetting(){
 /* ---------------- UREN PER WERF ----------------
    Toont enkel werven waar deze maand uren bij kwamen. De balk is
    relatief aan de grootste van de maand; het kleine getal is het
-   totaal sinds begin 2026. */
+   totaal sinds begin 2026. Drie kolommen naast elkaar zodat een
+   groeiend aantal werven minder snel voor verkleining zorgt. */
 function renderUren(){
   const wrap = document.getElementById('uren-grid');
   if(!wrap) return;
