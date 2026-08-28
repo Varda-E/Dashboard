@@ -1014,15 +1014,20 @@ async function laadUitSheet(){
 /* ---------------- KLOK ---------------- */
 function updateClock(){
   const now = new Date();
+  const uur = String(now.getHours()).padStart(2,'0');
+  const min = String(now.getMinutes()).padStart(2,'0');
+
+  /* Het knipperende scheidingsteken (":" wisselt met een bredere
+     spatie) is enkel voor de grote klok op pagina 1. De klok op
+     de rotatieschermen toont gewoon een vaste dubbele punt. */
   const sep = now.getSeconds() % 2 === 0 ? ':' : '\u2009 \u2009';
-  const tijd = `${String(now.getHours()).padStart(2,'0')}${sep}${String(now.getMinutes()).padStart(2,'0')}`;
-  document.getElementById('clock').textContent = tijd;
+  document.getElementById('clock').textContent = `${uur}${sep}${min}`;
   document.getElementById('date').textContent = now.toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
   /* Zelfde klok, compacter, bovenaan elk rotatiescherm. */
   const klokRotatie = document.getElementById('clock-rotatie');
   const datumRotatie = document.getElementById('date-rotatie');
-  if(klokRotatie) klokRotatie.textContent = tijd;
+  if(klokRotatie) klokRotatie.textContent = `${uur}:${min}`;
   if(datumRotatie) datumRotatie.textContent = now.toLocaleDateString('nl-BE', { weekday:'short', day:'numeric', month:'short' });
 }
 updateClock(); setInterval(updateClock, 1000);
