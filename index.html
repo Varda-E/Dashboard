@@ -64,19 +64,6 @@ const AANBESTEDINGEN = [];
 const VERJAARDAGEN   = [];
 const MEDEDELINGEN   = [];
 
-/* ============================================================
-   4. BEWERK HIER — BEURSKOERSEN (rotatiepagina)
-   ============================================================ */
-const BEURS_API_KEY = "4d1c8fc6d761419981a53e5e9c5112b6";
-const BEURS_SYMBOLEN = [
-  { naam: "S&P 500 (SPY)",   symbool: "SPY" },
-  { naam: "Dow Jones (DIA)", symbool: "DIA" },
-  { naam: "Nasdaq (QQQ)",    symbool: "QQQ" },
-  { naam: "BEL20 (EWK)",     symbool: "EWK" },
-  { naam: "Olie & Energie (XLE)", symbool: "XLE" },
-  { naam: "Koper (CPER)",    symbool: "CPER" },
-];
-
 /* Reservelijsten — leeg, zie punt 3. */
 let VERLOF = [];
 
@@ -362,45 +349,6 @@ function dagtipVanVandaag(){
   .rotatie-slide{ display:none; flex-direction:column; align-items:center; }
   .rotatie-slide.tonen{ display:flex; animation: slideIn .55s ease-out; }
   @keyframes slideIn{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
-  .beurs-vak{ width:88vw; max-width:1400px; max-height:74vh; overflow:hidden; }
-  .beurs-grid{
-    display:grid; grid-template-columns: repeat(3, 1fr); gap:22px;
-    width:100%; transform-origin: top center;
-  }
-  .beurs-kaart{
-    background:var(--card); border:1px solid var(--card-border); border-radius:20px;
-    box-shadow:var(--shadow); padding:24px 26px; text-align:center;
-  }
-  .beurs-naam{
-    font-family:'Manrope',sans-serif; font-weight:700; font-size:15px;
-    color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;
-  }
-  .beurs-waarde{
-    font-family:'Manrope',sans-serif; font-weight:800; font-size:30px; color:var(--ink);
-  }
-  .beurs-change{
-    margin-top:6px; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;
-  }
-  .beurs-change.up{ color:#1a8f5e; }
-  .beurs-change.down{ color:var(--red); }
-  .beurs-chart{ margin-top:12px; display:block; width:100%; height:auto; }
-  .beurs-chart .lijn{
-    fill:none; stroke-width:2.5;
-    stroke-dasharray:1400; stroke-dashoffset:1400;
-    animation: tekenLijn 1.6s ease-out forwards;
-  }
-  @keyframes tekenLijn{ to{ stroke-dashoffset:0; } }
-  .beurs-chart .lijn.up{ stroke:#1a8f5e; }
-  .beurs-chart .lijn.down{ stroke:var(--red); }
-  .beurs-chart .vlak{ opacity:0.08; }
-  .beurs-chart .vlak.up{ fill:#1a8f5e; }
-  .beurs-chart .vlak.down{ fill:var(--red); }
-  .beurs-chart .chart-grid{ stroke:var(--card-border); stroke-width:1; }
-  .beurs-chart .chart-as{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; fill:var(--ink-soft); }
-  .beurs-chart .chart-as-y{ text-anchor:end; }
-  .beurs-chart .chart-as-x-links{ text-anchor:start; }
-  .beurs-chart .chart-as-x-rechts{ text-anchor:end; }
-
   .dagtip-kaart{
     background:var(--card); border:1px solid var(--card-border); border-radius:20px;
     box-shadow:var(--shadow); padding:44px 60px; max-width:780px; text-align:center;
@@ -414,10 +362,6 @@ function dagtipVanVandaag(){
     margin-top:20px; font-family:'IBM Plex Mono',monospace; font-size:12px;
     color:var(--ink-soft); text-transform:capitalize;
   }
-  .beurs-leeg{
-    font-size:14px; color:var(--ink-soft); text-align:center; max-width:420px; line-height:1.6;
-  }
-
   /* ---------- BEZETTING: overzicht per werf ---------- */
   .bez-vak{ width:94vw; max-width:1660px; height:74vh; overflow:hidden; }
   .bez-grid{
@@ -466,42 +410,36 @@ function dagtipVanVandaag(){
   .bez-persoon .nm{ font-weight:600; }
   .bez-leeg{ font-size:15px; color:var(--ink-soft); text-align:center; padding:26px; }
 
-  /* ---------- UREN PER WERF ---------- */
+  /* ---------- UREN PER WERF ----------
+     Twee aparte rotatiepagina's: "opgestart" (meestal een kleine
+     lijst) krijgt 2 brede kolommen, "reeds lopend" (de lange
+     lijst) 3 kolommen. Elk blok heeft nu een heel scherm voor
+     zich — geen gedeelde kop meer nodig, de schermtitel volstaat. */
   .uren-vak{ width:94vw; max-width:1700px; height:74vh; overflow:hidden; }
   .uren-grid{
-    display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 36px;
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 40px;
     width:100%; transform-origin: top center;
   }
-  .uren-kopblok{
-    grid-column:1 / -1;
-    display:flex; align-items:baseline; justify-content:space-between; gap:16px;
-    font-family:'Manrope',sans-serif; font-weight:800; font-size:15px;
-    letter-spacing:0.07em; text-transform:uppercase; color:var(--red);
-    border-bottom:2px solid var(--red); padding:0 4px 7px 4px;
-    margin:22px 0 4px 0;
-  }
-  .uren-kopblok:first-child{ margin-top:0; }
-  .uren-kopblok span{
-    font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:12.5px;
-    letter-spacing:0; text-transform:none; color:var(--ink-soft);
-  }
-  .uren-rij{ padding:9px 4px 11px 4px; border-bottom:1px solid var(--card-border); }
+  .uren-grid.kolommen-2{ grid-template-columns:1fr 1fr; gap:0 56px; }
+  .uren-rij{ padding:14px 6px 16px 6px; border-bottom:1px solid var(--card-border); }
   .uren-kop{
     display:flex; align-items:baseline; justify-content:space-between;
-    gap:10px; margin-bottom:6px; flex-wrap:wrap;
+    gap:12px; margin-bottom:8px; flex-wrap:wrap;
   }
-  .uren-naam{ font-weight:600; font-size:15.5px; line-height:1.25; }
+  .uren-naam{ font-weight:600; font-size:18px; line-height:1.25; }
+  .kolommen-2 .uren-naam{ font-size:20px; }
   .uren-code{
-    font-family:'IBM Plex Mono',monospace; font-size:10.5px;
-    color:var(--ink-soft); margin-left:7px; font-weight:400;
+    font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--ink-soft); margin-left:8px; font-weight:400;
   }
   .uren-cijfers{
-    font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    font-family:'IBM Plex Mono',monospace; font-size:13px;
     color:var(--ink-soft); white-space:nowrap;
   }
+  .kolommen-2 .uren-cijfers{ font-size:14.5px; }
   .uren-cijfers b{ color:var(--red); font-weight:600; }
   .uren-balk{
-    height:8px; border-radius:5px;
+    height:9px; border-radius:5px;
     background:rgba(188,23,2,0.10); overflow:hidden;
   }
   .uren-balk i{ display:block; height:100%; background:var(--red); border-radius:5px; }
@@ -732,15 +670,13 @@ function dagtipVanVandaag(){
       <div class="kaart-legende" id="kaart-legende"></div>
     </div>
   </div>
-  <div class="rotatie-slide" id="slide-uren">
-    <div class="rotatie-titel">⏱️ <span>Uren per werf</span><span class="telling" id="uren-telling"></span></div>
-    <div class="uren-vak"><div class="uren-grid" id="uren-grid"></div></div>
+  <div class="rotatie-slide" id="slide-uren-nieuw">
+    <div class="rotatie-titel">🆕 <span>Opgestart deze maand</span><span class="telling" id="uren-telling-nieuw"></span></div>
+    <div class="uren-vak"><div class="uren-grid kolommen-2" id="uren-grid-nieuw"></div></div>
   </div>
-  <div class="rotatie-slide" id="slide-beurs">
-    <div class="rotatie-titel">📈 <span>Markten</span></div>
-    <div class="beurs-vak"><div class="beurs-grid" id="beurs-grid">
-      <div class="beurs-leeg">Koersen laden…</div>
-    </div></div>
+  <div class="rotatie-slide" id="slide-uren-lopend">
+    <div class="rotatie-titel">⏱️ <span>Reeds lopende werven</span><span class="telling" id="uren-telling-lopend"></span></div>
+    <div class="uren-vak"><div class="uren-grid" id="uren-grid-lopend"></div></div>
   </div>
   <div class="rotatie-slide" id="slide-verlof">
     <div class="rotatie-titel">🌴 <span>Verlof komende 4 weken</span></div>
@@ -1248,60 +1184,54 @@ function renderBezetting(){
 }
 
 /* ---------------- UREN PER WERF ----------------
-   Toont enkel werven waar deze maand uren bij kwamen. De balk is
-   relatief aan de grootste van de maand; het kleine getal is het
-   totaal sinds begin 2026. Drie kolommen naast elkaar zodat een
-   groeiend aantal werven minder snel voor verkleining zorgt. */
-function renderUren(){
-  const wrap = document.getElementById('uren-grid');
-  if(!wrap) return;
-  const telling = document.getElementById('uren-telling');
+   Twee aparte rotatieschermen: "opgestart deze maand" en "reeds
+   lopend". Elk krijgt zo een heel scherm voor zich, in plaats van
+   het te moeten delen — dat laat een groter lettertype toe. De
+   balk per rij is relatief aan de grootste van de maand; het
+   kleine getal is het totaal sinds begin 2026. */
+const getalUren = n => n.toLocaleString('nl-BE', { maximumFractionDigits: 0 });
 
-  const rijen = [...UREN].sort((a,b)=> b.maand - a.maand);
-  if(!rijen.length){
+function renderUrenBlok(gridId, tellingId, lijst){
+  const wrap = document.getElementById(gridId);
+  const telling = document.getElementById(tellingId);
+  if(!wrap) return;
+
+  if(!lijst.length){
     if(telling) telling.textContent = '';
-    wrap.innerHTML = `<div class="uren-leeg">Nog geen uren in de Sheet.</div>`;
+    wrap.innerHTML = `<div class="uren-leeg">Geen werven in deze lijst.</div>`;
     return;
   }
 
-  const totaalMaand = rijen.reduce((n,r)=> n + r.maand, 0);
   const maandNaam = new Date().toLocaleDateString('nl-BE', { month:'long' });
+  const totaal = lijst.reduce((n,r)=> n + r.maand, 0);
   if(telling){
-    telling.textContent = maandNaam + ' · ' + Math.round(totaalMaand) + ' uur · '
-                        + rijen.length + (rijen.length === 1 ? ' werf' : ' werven');
+    telling.textContent = maandNaam + ' · ' + getalUren(totaal) + ' u · '
+                        + lijst.length + (lijst.length === 1 ? ' werf' : ' werven');
   }
 
-  const getal = n => n.toLocaleString('nl-BE', { maximumFractionDigits: 0 });
+  wrap.innerHTML = lijst.map(r=>{
+    const deel = r.totaal > 0 ? Math.min(100, r.maand / r.totaal * 100) : 0;
+    return `<div class="uren-rij">
+      <div class="uren-kop">
+        <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
+        <div class="uren-cijfers"><b>${getalUren(r.maand)} u</b> deze maand · ${getalUren(r.totaal)} u tot.</div>
+      </div>
+      <div class="uren-balk"><i style="width:${Math.max(1.5, deel).toFixed(1)}%"></i></div>
+    </div>`;
+  }).join('');
+
+  pasPassend(wrap, wrap.parentElement);
+}
+
+function renderUren(){
+  const rijen = [...UREN].sort((a,b)=> b.maand - a.maand);
   /* Nieuw = alle geregistreerde uren van deze werf vielen deze
      maand. Het S-nummer zegt niets over de start: dat is het jaar
      van de verkoop, niet van de uitvoering. */
   const isNieuw = r => r.totaal > 0 && r.maand >= r.totaal - 0.05;
 
-  const nieuw  = rijen.filter(isNieuw);
-  const lopend = rijen.filter(r => !isNieuw(r));
-
-  function blok(titel, lijst, aantalTekst){
-    if(!lijst.length) return '';
-    const uren = lijst.reduce((n,r)=> n + r.maand, 0);
-    const kop = `<div class="uren-kopblok">${esc(titel)}
-      <span>${lijst.length} ${aantalTekst} · ${getal(uren)} u</span></div>`;
-    return kop + lijst.map(r=>{
-      const deel = r.totaal > 0 ? Math.min(100, r.maand / r.totaal * 100) : 0;
-      return `<div class="uren-rij">
-        <div class="uren-kop">
-          <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
-          <div class="uren-cijfers"><b>${getal(r.maand)} u</b> deze maand · ${getal(r.totaal)} u tot.</div>
-        </div>
-        <div class="uren-balk"><i style="width:${Math.max(1.5, deel).toFixed(1)}%"></i></div>
-      </div>`;
-    }).join('');
-  }
-
-  wrap.innerHTML =
-      blok('Opgestart deze maand', nieuw,  nieuw.length === 1 ? 'werf' : 'werven')
-    + blok('Reeds lopend',        lopend, lopend.length === 1 ? 'werf' : 'werven');
-
-  pasPassend(wrap, wrap.parentElement);
+  renderUrenBlok('uren-grid-nieuw',  'uren-telling-nieuw',  rijen.filter(isNieuw));
+  renderUrenBlok('uren-grid-lopend', 'uren-telling-lopend', rijen.filter(r => !isNieuw(r)));
 }
 
 /* ---------------- KAART (SVG, geen bibliotheek) ----------------
@@ -1502,127 +1432,6 @@ function cfgRender(){
     </div>`;
 }
 
-/* ---------------- BEURSKOERSEN ---------------- */
-function maakSparkline(closes, dates, omhoog){
-  if(!closes || closes.length < 2) return '';
-  const w = 300, h = 140;
-  const padLinks = 46, padRechts = 10, padBoven = 14, padOnder = 26;
-  const min = Math.min(...closes), max = Math.max(...closes);
-  const spread = (max - min) || 1;
-  const breedte = w - padLinks - padRechts;
-  const hoogte = h - padBoven - padOnder;
-  const stapX = breedte / (closes.length - 1);
-  const punten = closes.map((c,i)=>{
-    const x = padLinks + i*stapX;
-    const y = padBoven + (1 - (c - min)/spread) * hoogte;
-    return [x,y];
-  });
-  const lijnPad = punten.map(p=> p.join(',')).join(' ');
-  const vlakPad = `${padLinks},${h-padOnder} ` + lijnPad + ` ${w-padRechts},${h-padOnder}`;
-  const kleur = omhoog ? 'up' : 'down';
-
-  const fmt = n => n.toLocaleString('nl-BE', {maximumFractionDigits:2});
-  const datumFmt = d => new Date(d).toLocaleDateString('nl-BE', {day:'numeric', month:'short'});
-
-  return `<svg class="beurs-chart" viewBox="0 0 ${w} ${h}">
-    <line x1="${padLinks}" y1="${padBoven}" x2="${w-padRechts}" y2="${padBoven}" class="chart-grid"></line>
-    <line x1="${padLinks}" y1="${padBoven + hoogte/2}" x2="${w-padRechts}" y2="${padBoven + hoogte/2}" class="chart-grid"></line>
-    <line x1="${padLinks}" y1="${h-padOnder}" x2="${w-padRechts}" y2="${h-padOnder}" class="chart-grid"></line>
-    <text x="${padLinks-6}" y="${padBoven+4}" class="chart-as chart-as-y">${fmt(max)}</text>
-    <text x="${padLinks-6}" y="${padBoven+hoogte/2+4}" class="chart-as chart-as-y">${fmt((max+min)/2)}</text>
-    <text x="${padLinks-6}" y="${h-padOnder+4}" class="chart-as chart-as-y">${fmt(min)}</text>
-    <polygon class="vlak ${kleur}" points="${vlakPad}"></polygon>
-    <polyline class="lijn ${kleur}" points="${lijnPad}"></polyline>
-    <text x="${padLinks}" y="${h-6}" class="chart-as chart-as-x-links">${datumFmt(dates[0])}</text>
-    <text x="${w-padRechts}" y="${h-6}" class="chart-as chart-as-x-rechts">${datumFmt(dates[dates.length-1])}</text>
-  </svg>`;
-}
-
-const HISTORIE_CACHE_KEY = 'varda-beurs-historie-v2';
-
-async function haalHistorieOp(){
-  const vandaag = new Date().toISOString().slice(0,10);
-  let cache = {};
-  try{
-    const saved = localStorage.getItem(HISTORIE_CACHE_KEY);
-    if(saved){
-      const parsed = JSON.parse(saved);
-      if(parsed.datum === vandaag && parsed.data) cache = parsed.data;
-    }
-  }catch(e){}
-
-  /* Enkel opnieuw ophalen wat nog ontbreekt. Zo blijft een eenmalig
-     mislukte aanvraag (bv. door de aanvraaglimiet) niet de hele dag
-     hangen — bij de volgende keer wordt gewoon opnieuw geprobeerd. */
-  const ontbrekend = BEURS_SYMBOLEN.filter(s => !cache[s.symbool]);
-  if(ontbrekend.length === 0) return cache;
-
-  const wacht = ms => new Promise(r=> setTimeout(r, ms));
-  for(const s of ontbrekend){
-    try{
-      const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${s.symbool}&interval=1day&outputsize=30&apikey=${BEURS_API_KEY}`);
-      const json = await res.json();
-      if(json && Array.isArray(json.values) && json.values.length > 1){
-        cache[s.symbool] = json;
-      }
-    }catch(e){ /* niet bewaren, opnieuw proberen bij de volgende keer */ }
-    await wacht(700);
-  }
-  try{ localStorage.setItem(HISTORIE_CACHE_KEY, JSON.stringify({ datum: vandaag, data: cache })); }catch(e){}
-  return cache;
-}
-
-async function laadBeurskoersen(){
-  const grid = document.getElementById('beurs-grid');
-  if(!BEURS_API_KEY || BEURS_API_KEY === "JOUW_TWELVEDATA_API_KEY"){
-    grid.innerHTML = `<div class="beurs-leeg">Nog geen Twelve Data API-sleutel ingevuld.</div>`;
-    return;
-  }
-  try{
-    const historieData = await haalHistorieOp();
-    const wacht = ms => new Promise(r=> setTimeout(r, ms));
-    const resultaten = [];
-    for(const s of BEURS_SYMBOLEN){
-      let data = null;
-      try{
-        const quoteRes = await fetch(`https://api.twelvedata.com/quote?symbol=${s.symbool}&apikey=${BEURS_API_KEY}`);
-        data = await quoteRes.json();
-      }catch(e){}
-      resultaten.push({ naam: s.naam, data, history: historieData[s.symbool] });
-      await wacht(300);
-    }
-    grid.innerHTML = resultaten.map(r=>{
-      if(!r.data || r.data.status === 'error' || r.data.close === undefined){
-        return `<div class="beurs-kaart"><div class="beurs-naam">${esc(r.naam)}</div><div class="beurs-leeg">Geen data</div></div>`;
-      }
-      const close = parseFloat(r.data.close);
-      const change = parseFloat(r.data.change);
-      const pct = parseFloat(r.data.percent_change);
-      const omhoog = change >= 0;
-
-      let sparkline = '';
-      if(r.history && Array.isArray(r.history.values) && r.history.values.length > 1){
-        const punten = r.history.values.map(v=> ({ datum: v.datetime, close: parseFloat(v.close) })).reverse();
-        const closes = punten.map(p=> p.close);
-        const dates = punten.map(p=> p.datum);
-        const trendOmhoog = closes[closes.length-1] >= closes[0];
-        sparkline = maakSparkline(closes, dates, trendOmhoog);
-      }
-
-      return `<div class="beurs-kaart">
-        <div class="beurs-naam">${esc(r.naam)}</div>
-        <div class="beurs-waarde">${close.toLocaleString('nl-BE', {maximumFractionDigits:2})}</div>
-        <div class="beurs-change ${omhoog?'up':'down'}">${omhoog?'▲':'▼'} ${change.toFixed(2)} (${pct.toFixed(2)}%)</div>
-        ${sparkline}
-      </div>`;
-    }).join('');
-    pasPassend(grid, grid.parentElement);
-  }catch(e){
-    grid.innerHTML = `<div class="beurs-leeg">Koersen konden niet geladen worden.</div>`;
-  }
-}
-laadBeurskoersen(); setInterval(laadBeurskoersen, 20*60*1000);
-
 /* ---------------- BELGISCHE FEESTDAGEN ---------------- */
 function paasDatum(jaar){
   const a = jaar % 19, b = Math.floor(jaar/100), cc = jaar % 100;
@@ -1793,8 +1602,6 @@ function herbereken(){
   renderBezetting();
   renderKaart();
   renderUren();
-  const grid = document.getElementById('beurs-grid');
-  if(grid) pasPassend(grid, grid.parentElement);
 }
 window.addEventListener('resize', ()=>{
   clearTimeout(herberekenTimer);
@@ -1802,7 +1609,7 @@ window.addEventListener('resize', ()=>{
 });
 
 /* ---------------- ROTATIE ---------------- */
-const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'uren', 'verlof', 'dagtip', 'beurs'];
+const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'uren-nieuw', 'uren-lopend', 'verlof', 'dagtip'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
@@ -1817,8 +1624,8 @@ function rotatieNaar(index){
   overlay.classList.toggle('tonen', fase !== 'dashboard');
   document.getElementById('slide-bezetting').classList.toggle('tonen', fase === 'bezetting');
   document.getElementById('slide-kaart').classList.toggle('tonen', fase === 'kaart');
-  document.getElementById('slide-uren').classList.toggle('tonen', fase === 'uren');
-  document.getElementById('slide-beurs').classList.toggle('tonen', fase === 'beurs');
+  document.getElementById('slide-uren-nieuw').classList.toggle('tonen', fase === 'uren-nieuw');
+  document.getElementById('slide-uren-lopend').classList.toggle('tonen', fase === 'uren-lopend');
   document.getElementById('slide-verlof').classList.toggle('tonen', fase === 'verlof');
   document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
   document.querySelectorAll('#rotatie-dots .dot').forEach((d,i)=> d.classList.toggle('actief', i === rotatieIndex));
@@ -1828,11 +1635,7 @@ function rotatieNaar(index){
   if(fase === 'kaart')     renderKaart();
   if(fase === 'bezetting') renderBezetting();
   if(fase === 'verlof')    renderVerlofPagina();
-  if(fase === 'uren')      renderUren();
-  if(fase === 'beurs'){
-    const grid = document.getElementById('beurs-grid');
-    if(grid) pasPassend(grid, grid.parentElement);
-  }
+  if(fase === 'uren-nieuw' || fase === 'uren-lopend') renderUren();
 }
 
 function rotatieHerstart(){
