@@ -336,6 +336,36 @@ function dagtipVanVandaag(){
     z-index:30;
   }
   .rotatie-overlay.tonen{ opacity:1; pointer-events:auto; }
+
+  /* Kleine, vaste kopbalk bovenaan elk rotatiescherm: logo + klok,
+     en een balk die aangeeft waar je zit in de rotatie. Bewust
+     compacter dan de kop op pagina 1 — dit mag niet concurreren
+     met de eigenlijke inhoud van elk scherm. */
+  .rotatie-header{ position:absolute; top:28px; left:46px; right:46px; }
+  .rotatie-header-top{ display:flex; align-items:center; justify-content:space-between; }
+  .rotatie-header-brand{ display:flex; align-items:center; gap:9px; }
+  .rotatie-header-brand img{ height:24px; width:auto; display:block; }
+  body.nacht .rotatie-header-brand img{ background:#fff; padding:3px 7px; border-radius:7px; }
+  .rotatie-header-wordmark{
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:15px;
+    color:var(--red); letter-spacing:0.02em;
+  }
+  .rotatie-header-klok{ display:flex; align-items:baseline; gap:11px; }
+  .rotatie-header-tijd{
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:19px;
+    color:var(--ink); font-variant-numeric: tabular-nums;
+  }
+  .rotatie-header-datum{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft);
+    text-transform:capitalize;
+  }
+  .rotatie-header-balk{ display:flex; gap:6px; margin-top:12px; }
+  .rotatie-header-balk .seg{
+    flex:1; height:3px; border-radius:2px; background:var(--card-border);
+    transition: background .3s ease;
+  }
+  .rotatie-header-balk .seg.actief{ background:var(--red); }
+
   .rotatie-titel{
     font-family:'Manrope',sans-serif; font-weight:800; font-size:22px;
     letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
@@ -659,6 +689,20 @@ function dagtipVanVandaag(){
 </div>
 
 <div class="rotatie-overlay" id="rotatie-overlay">
+  <div class="rotatie-header">
+    <div class="rotatie-header-top">
+      <div class="rotatie-header-brand">
+        <img src="logo.png" alt="Varda"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+        <span class="rotatie-header-wordmark" style="display:none;">VARDA</span>
+      </div>
+      <div class="rotatie-header-klok">
+        <span class="rotatie-header-tijd" id="clock-rotatie">--:--</span>
+        <span class="rotatie-header-datum" id="date-rotatie">-</span>
+      </div>
+    </div>
+    <div class="rotatie-header-balk" id="rotatie-header-balk"></div>
+  </div>
   <div class="rotatie-slide" id="slide-bezetting">
     <div class="rotatie-titel">👷 <span>Wie werkt waar</span><span class="telling" id="bez-telling"></span></div>
     <div class="bez-vak"><div class="bez-grid" id="bez-grid"></div></div>
@@ -959,8 +1003,15 @@ async function laadUitSheet(){
 function updateClock(){
   const now = new Date();
   const sep = now.getSeconds() % 2 === 0 ? ':' : '\u2009 \u2009';
-  document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2,'0')}${sep}${String(now.getMinutes()).padStart(2,'0')}`;
+  const tijd = `${String(now.getHours()).padStart(2,'0')}${sep}${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('clock').textContent = tijd;
   document.getElementById('date').textContent = now.toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  /* Zelfde klok, compacter, bovenaan elk rotatiescherm. */
+  const klokRotatie = document.getElementById('clock-rotatie');
+  const datumRotatie = document.getElementById('date-rotatie');
+  if(klokRotatie) klokRotatie.textContent = tijd;
+  if(datumRotatie) datumRotatie.textContent = now.toLocaleDateString('nl-BE', { weekday:'short', day:'numeric', month:'short' });
 }
 updateClock(); setInterval(updateClock, 1000);
 
@@ -1636,6 +1687,15 @@ const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'uren-nieuw', 'uren-lop
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
+/* De kopbalk telt enkel de echte rotatieschermen mee, niet het
+   hoofddashboard zelf — dat heeft al zijn eigen, grotere kop. */
+const rotatieHeaderFases = rotatieFases.filter(f => f !== 'dashboard');
+(function bouwRotatieHeaderBalk(){
+  const balk = document.getElementById('rotatie-header-balk');
+  if(!balk) return;
+  balk.innerHTML = rotatieHeaderFases.map(()=> '<div class="seg"></div>').join('');
+})();
+
 function rotatieVolgende(){ rotatieNaar(rotatieIndex + 1); }
 function rotatieVorige(){   rotatieNaar(rotatieIndex - 1); }
 
@@ -1652,6 +1712,8 @@ function rotatieNaar(index){
   document.getElementById('slide-verlof').classList.toggle('tonen', fase === 'verlof');
   document.getElementById('slide-dagtip').classList.toggle('tonen', fase === 'dagtip');
   document.querySelectorAll('#rotatie-dots .dot').forEach((d,i)=> d.classList.toggle('actief', i === rotatieIndex));
+  const headerIndex = rotatieHeaderFases.indexOf(fase);
+  document.querySelectorAll('#rotatie-header-balk .seg').forEach((s,i)=> s.classList.toggle('actief', i === headerIndex));
 
   /* Bij het tonen opnieuw opmeten: een verborgen vak heeft geen
      hoogte, dus dan valt er niets te schalen. */
