@@ -156,23 +156,14 @@ function dagtipVanVandaag(){
     font-family:'Manrope',sans-serif; font-weight:800; font-size:30px;
     letter-spacing:0.02em; color:var(--red);
   }
-  .tagline{
-    font-family:'Inter',sans-serif; font-size:12px; letter-spacing:0.08em;
-    text-transform:uppercase; color:var(--ink-soft); margin-top:2px;
-  }
-  .clockblock{ text-align:right; }
-  /* De klok staat in een vak met een vaste breedte en links
-     uitgelijnde cijfers. Daardoor blijft het uur op zijn plek en
-     schuiven de minuten naar rechts wanneer het scheidingsteken
-     wisselt — zoals bij een klassieke klok. */
+  .clockblock{ display:flex; align-items:baseline; gap:16px; }
   .clock{
-    display:inline-block; text-align:left; min-width:3.05em;
     font-family:'Manrope',sans-serif; font-weight:700; font-size:4.8vw;
     line-height:0.95; color:var(--ink); font-variant-numeric: tabular-nums;
   }
   .date{
-    font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--ink-soft);
-    text-transform:capitalize; margin-top:6px;
+    font-family:'IBM Plex Mono',monospace; font-size:17px; color:var(--ink-soft);
+    text-transform:capitalize;
   }
 
   .rule{
@@ -630,7 +621,6 @@ function dagtipVanVandaag(){
            onerror="this.style.display='none'; document.getElementById('wordmark-fallback').style.display='block';">
       <div>
         <div class="wordmark" id="wordmark-fallback" style="display:none;">VARDA</div>
-        <div class="tagline">Kantoor Dashboard</div>
       </div>
     </div>
     <div class="clockblock">
@@ -1016,18 +1006,15 @@ function updateClock(){
   const now = new Date();
   const uur = String(now.getHours()).padStart(2,'0');
   const min = String(now.getMinutes()).padStart(2,'0');
+  const tijd = `${uur}:${min}`;
 
-  /* Het knipperende scheidingsteken (":" wisselt met een bredere
-     spatie) is enkel voor de grote klok op pagina 1. De klok op
-     de rotatieschermen toont gewoon een vaste dubbele punt. */
-  const sep = now.getSeconds() % 2 === 0 ? ':' : '\u2009 \u2009';
-  document.getElementById('clock').textContent = `${uur}${sep}${min}`;
+  document.getElementById('clock').textContent = tijd;
   document.getElementById('date').textContent = now.toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
   /* Zelfde klok, compacter, bovenaan elk rotatiescherm. */
   const klokRotatie = document.getElementById('clock-rotatie');
   const datumRotatie = document.getElementById('date-rotatie');
-  if(klokRotatie) klokRotatie.textContent = `${uur}:${min}`;
+  if(klokRotatie) klokRotatie.textContent = tijd;
   if(datumRotatie) datumRotatie.textContent = now.toLocaleDateString('nl-BE', { weekday:'short', day:'numeric', month:'short' });
 }
 updateClock(); setInterval(updateClock, 1000);
