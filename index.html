@@ -1044,23 +1044,25 @@ function pasPassend(binnen, buiten){
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function renderAanbestedingen(){
-  const rows = [...DATA.aanb].sort((a,b)=> new Date(a.datum) - new Date(b.datum));
+  const today = new Date(); today.setHours(0,0,0,0);
+  /* Datums vóór vandaag zijn niet meer actueel — die uit de Sheet
+     schrappen is manueel werk, dus we filteren ze hier gewoon weg
+     in plaats van verouderde aanbestedingen te blijven tonen. */
+  const rows = [...DATA.aanb]
+    .filter(r => new Date(r.datum) >= today)
+    .sort((a,b)=> new Date(a.datum) - new Date(b.datum));
+
   if(!rows.length){
     document.getElementById('aanb-count').textContent = '0';
     document.getElementById('aanb-body').innerHTML =
-      `<tr><td colspan="5" style="color:var(--ink-soft);font-size:15px;padding:26px 22px">Geen aanbestedingen in de Sheet.</td></tr>`;
+      `<tr><td colspan="5" style="color:var(--ink-soft);font-size:15px;padding:26px 22px">Geen aankomende aanbestedingen.</td></tr>`;
     return;
   }
-  const today = new Date(); today.setHours(0,0,0,0);
-  let firstFuture = true;
   document.getElementById('aanb-count').textContent = rows.length;
-  document.getElementById('aanb-body').innerHTML = rows.map(r=>{
+  document.getElementById('aanb-body').innerHTML = rows.map((r, i)=>{
     const d = new Date(r.datum);
-    const isFuture = d >= today;
-    const soon = isFuture && firstFuture;
-    if(isFuture) firstFuture = false;
     const datumFmt = d.toLocaleDateString('nl-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
-    return `<tr class="${soon ? 'soon':''}">
+    return `<tr class="${i === 0 ? 'soon':''}">
       <td class="klant">${esc(r.klant)}</td><td class="werf">${esc(r.werf)}</td>
       <td class="datum">${datumFmt}</td><td class="uur">${esc(r.uur)}</td><td class="pb">${esc(r.pb)}</td>
     </tr>`;
@@ -1264,7 +1266,7 @@ function renderBezetting(){
    kleine getal is het totaal sinds begin 2026. */
 const getalUren = n => n.toLocaleString('nl-BE', { maximumFractionDigits: 0 });
 
-function renderUrenBlok(gridId, tellingId, lijst){
+function renderUrenBlok(gridId, tellingId, lijst, relatief){
   const wrap = document.getElementById(gridId);
   const telling = document.getElementById(tellingId);
   if(!wrap) return;
@@ -1282,12 +1284,23 @@ function renderUrenBlok(gridId, tellingId, lijst){
                         + lijst.length + (lijst.length === 1 ? ' werf' : ' werven');
   }
 
+  /* Op de "opgestart"-pagina is totaal altijd gelijk aan deze
+     maand — dat maakt "% van totaal" een altijd-volle balk en het
+     tweede cijfer een herhaling. De balk toont daar in de plaats
+     de uren t.o.v. de drukste nieuwe werf, dat blijft wél nuttig. */
+  const maxMaand = relatief ? Math.max(1, ...lijst.map(r => r.maand)) : null;
+
   wrap.innerHTML = lijst.map(r=>{
-    const deel = r.totaal > 0 ? Math.min(100, r.maand / r.totaal * 100) : 0;
+    const deel = relatief
+      ? (r.maand / maxMaand * 100)
+      : (r.totaal > 0 ? Math.min(100, r.maand / r.totaal * 100) : 0);
+    const cijfers = relatief
+      ? `<b>${getalUren(r.maand)} u</b> deze maand`
+      : `<b>${getalUren(r.maand)} u</b> deze maand · ${getalUren(r.totaal)} u tot.`;
     return `<div class="uren-rij">
       <div class="uren-kop">
         <div class="uren-naam">${esc(r.werf)}<span class="uren-code">${esc(r.code)}</span></div>
-        <div class="uren-cijfers"><b>${getalUren(r.maand)} u</b> deze maand · ${getalUren(r.totaal)} u tot.</div>
+        <div class="uren-cijfers">${cijfers}</div>
       </div>
       <div class="uren-balk"><i style="width:${Math.max(1.5, deel).toFixed(1)}%"></i></div>
     </div>`;
@@ -1303,8 +1316,8 @@ function renderUren(){
      van de verkoop, niet van de uitvoering. */
   const isNieuw = r => r.totaal > 0 && r.maand >= r.totaal - 0.05;
 
-  renderUrenBlok('uren-grid-nieuw',  'uren-telling-nieuw',  rijen.filter(isNieuw));
-  renderUrenBlok('uren-grid-lopend', 'uren-telling-lopend', rijen.filter(r => !isNieuw(r)));
+  renderUrenBlok('uren-grid-nieuw',  'uren-telling-nieuw',  rijen.filter(isNieuw), true);
+  renderUrenBlok('uren-grid-lopend', 'uren-telling-lopend', rijen.filter(r => !isNieuw(r)), false);
 }
 
 /* ---------------- KAART (SVG, geen bibliotheek) ----------------
