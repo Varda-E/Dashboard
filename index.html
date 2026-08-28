@@ -823,8 +823,13 @@ async function haalTabblad(url){
 
 /* Eén onbereikbaar tabblad mag de andere vijf niet meeslepen. */
 let mislukteTabbladen = [];
-async function haalVeilig(naam, url, bruikbaar){
+async function haalVeilig(naam, url, bruikbaar, vertragingMs){
   if(!bruikbaar(url)) return null;
+  /* Kleine, oplopende vertraging per tabblad: 9 verzoeken die
+     allemaal exact tegelijk naar hetzelfde Sheet-document gaan,
+     lopen soms tegen een trage/mislukte laatste aan (typisch het
+     laatste tabblad in de rij). Even spreiden voorkomt die burst. */
+  if(vertragingMs) await new Promise(r => setTimeout(r, vertragingMs));
   try{
     return await haalTabblad(url);
   }catch(e){
@@ -844,15 +849,15 @@ async function laadUitSheet(){
   mislukteTabbladen = [];
   try{
     const [aanb, verlof, verj, tips, med, bezetting, uren, verjExtra, wagens] = await Promise.all([
-      haalVeilig('aanbestedingen', urls.aanb,      bruikbaar),
-      haalVeilig('verlof',         urls.verlof,    bruikbaar),
-      haalVeilig('verjaardagen',   urls.verj,      bruikbaar),
-      haalVeilig('tips',           urls.tips,      bruikbaar),
-      haalVeilig('mededelingen',   urls.med,       bruikbaar),
-      haalVeilig('bezetting',      urls.bezetting, bruikbaar),
-      haalVeilig('uren',           urls.uren,      bruikbaar),
-      haalVeilig('verj. extra',    urls.verjExtra, bruikbaar),
-      haalVeilig('wagenpark',      urls.wagens,    bruikbaar),
+      haalVeilig('aanbestedingen', urls.aanb,      bruikbaar, 0),
+      haalVeilig('verlof',         urls.verlof,    bruikbaar, 150),
+      haalVeilig('verjaardagen',   urls.verj,      bruikbaar, 300),
+      haalVeilig('tips',           urls.tips,      bruikbaar, 450),
+      haalVeilig('mededelingen',   urls.med,       bruikbaar, 600),
+      haalVeilig('bezetting',      urls.bezetting, bruikbaar, 750),
+      haalVeilig('uren',           urls.uren,      bruikbaar, 900),
+      haalVeilig('verj. extra',    urls.verjExtra, bruikbaar, 1050),
+      haalVeilig('wagenpark',      urls.wagens,    bruikbaar, 1200),
     ]);
 
     /* Een leeg tabblad mag bestaande gegevens niet wissen. */
