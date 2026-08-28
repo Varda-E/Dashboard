@@ -370,16 +370,16 @@ function dagtipVanVandaag(){
   .rotatie-header-stap.actief .seg{ background:var(--red); }
 
   .rotatie-titel{
-    position:absolute; top:104px; left:46px; right:46px; text-align:center;
-    font-family:'Manrope',sans-serif; font-weight:800; font-size:22px;
-    letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
+    text-align:center; margin-top:16px;
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:19px;
+    letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-soft);
   }
   .rotatie-titel .rt-item{ display:none; }
   .rotatie-titel .rt-item.actief{ display:inline-block; }
   .rotatie-titel span{ color:var(--red); }
   .rotatie-titel .telling{
     color:var(--ink-soft); font-weight:600; font-size:15px; letter-spacing:0.04em;
-    text-transform:none; margin-left:14px;
+    text-transform:none; margin-left:9px;
   }
   .rotatie-slide{ display:none; flex-direction:column; align-items:center; }
   .rotatie-slide.tonen{ display:flex; animation: slideIn .55s ease-out; }
@@ -706,15 +706,15 @@ function dagtipVanVandaag(){
         <span class="rotatie-header-datum" id="date-rotatie">-</span>
       </div>
     </div>
+    <div class="rotatie-titel" id="rotatie-titel">
+      <span class="rt-item" data-fase="bezetting">👷 <span>Wie werkt waar</span> <span class="telling" id="bez-telling"></span></span>
+      <span class="rt-item" data-fase="kaart">📍 <span>Werven vandaag</span> <span class="telling" id="kaart-telling"></span></span>
+      <span class="rt-item" data-fase="uren-nieuw">🆕 <span>Opgestart deze maand</span> <span class="telling" id="uren-telling-nieuw"></span></span>
+      <span class="rt-item" data-fase="uren-lopend">⏱️ <span>Reeds lopende werven</span> <span class="telling" id="uren-telling-lopend"></span></span>
+      <span class="rt-item" data-fase="verlof">🌴 <span>Verlof komende 4 weken</span></span>
+      <span class="rt-item" data-fase="dagtip">💡 <span>Tip van de dag</span></span>
+    </div>
     <div class="rotatie-header-balk" id="rotatie-header-balk"></div>
-  </div>
-  <div class="rotatie-titel" id="rotatie-titel">
-    <span class="rt-item" data-fase="bezetting">👷 <span>Wie werkt waar</span><span class="telling" id="bez-telling"></span></span>
-    <span class="rt-item" data-fase="kaart">📍 <span>Werven vandaag</span><span class="telling" id="kaart-telling"></span></span>
-    <span class="rt-item" data-fase="uren-nieuw">🆕 <span>Opgestart deze maand</span><span class="telling" id="uren-telling-nieuw"></span></span>
-    <span class="rt-item" data-fase="uren-lopend">⏱️ <span>Reeds lopende werven</span><span class="telling" id="uren-telling-lopend"></span></span>
-    <span class="rt-item" data-fase="verlof">🌴 <span>Verlof komende 4 weken</span></span>
-    <span class="rt-item" data-fase="dagtip">💡 <span>Tip van de dag</span></span>
   </div>
   <div class="rotatie-slide" id="slide-bezetting">
     <div class="bez-vak"><div class="bez-grid" id="bez-grid"></div></div>
