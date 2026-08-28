@@ -374,6 +374,8 @@ function dagtipVanVandaag(){
     font-family:'Manrope',sans-serif; font-weight:800; font-size:22px;
     letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
   }
+  .rotatie-titel .rt-item{ display:none; }
+  .rotatie-titel .rt-item.actief{ display:inline-block; }
   .rotatie-titel span{ color:var(--red); }
   .rotatie-titel .telling{
     color:var(--ink-soft); font-weight:600; font-size:15px; letter-spacing:0.04em;
@@ -706,27 +708,30 @@ function dagtipVanVandaag(){
     </div>
     <div class="rotatie-header-balk" id="rotatie-header-balk"></div>
   </div>
+  <div class="rotatie-titel" id="rotatie-titel">
+    <span class="rt-item" data-fase="bezetting">👷 <span>Wie werkt waar</span><span class="telling" id="bez-telling"></span></span>
+    <span class="rt-item" data-fase="kaart">📍 <span>Werven vandaag</span><span class="telling" id="kaart-telling"></span></span>
+    <span class="rt-item" data-fase="uren-nieuw">🆕 <span>Opgestart deze maand</span><span class="telling" id="uren-telling-nieuw"></span></span>
+    <span class="rt-item" data-fase="uren-lopend">⏱️ <span>Reeds lopende werven</span><span class="telling" id="uren-telling-lopend"></span></span>
+    <span class="rt-item" data-fase="verlof">🌴 <span>Verlof komende 4 weken</span></span>
+    <span class="rt-item" data-fase="dagtip">💡 <span>Tip van de dag</span></span>
+  </div>
   <div class="rotatie-slide" id="slide-bezetting">
-    <div class="rotatie-titel">👷 <span>Wie werkt waar</span><span class="telling" id="bez-telling"></span></div>
     <div class="bez-vak"><div class="bez-grid" id="bez-grid"></div></div>
   </div>
   <div class="rotatie-slide" id="slide-kaart">
-    <div class="rotatie-titel">📍 <span>Werven vandaag</span><span class="telling" id="kaart-telling"></span></div>
     <div class="kaart-wrap">
       <div id="kaart"></div>
       <div class="kaart-legende" id="kaart-legende"></div>
     </div>
   </div>
   <div class="rotatie-slide" id="slide-uren-nieuw">
-    <div class="rotatie-titel">🆕 <span>Opgestart deze maand</span><span class="telling" id="uren-telling-nieuw"></span></div>
     <div class="uren-vak"><div class="uren-grid kolommen-2" id="uren-grid-nieuw"></div></div>
   </div>
   <div class="rotatie-slide" id="slide-uren-lopend">
-    <div class="rotatie-titel">⏱️ <span>Reeds lopende werven</span><span class="telling" id="uren-telling-lopend"></span></div>
     <div class="uren-vak"><div class="uren-grid" id="uren-grid-lopend"></div></div>
   </div>
   <div class="rotatie-slide" id="slide-verlof">
-    <div class="rotatie-titel">🌴 <span>Verlof komende 4 weken</span></div>
     <div class="verlof-legende">
       <span class="leg-item"><span class="leg-blok vak"></span> Afwezig / vakantie</span>
       <span class="leg-item"><span class="leg-blok ziek"></span> Ziekte</span>
@@ -736,7 +741,6 @@ function dagtipVanVandaag(){
     <div class="gantt-wrap" id="gantt-wrap"></div>
   </div>
   <div class="rotatie-slide" id="slide-dagtip">
-    <div class="rotatie-titel">💡 <span>Tip van de dag</span></div>
     <div class="dagtip-kaart">
       <div class="dagtip-icoon">💡</div>
       <div class="dagtip-tekst" id="dagtip-tekst"></div>
@@ -1717,6 +1721,7 @@ function rotatieNaar(index){
   document.querySelectorAll('#rotatie-dots .dot').forEach((d,i)=> d.classList.toggle('actief', i === rotatieIndex));
   const headerIndex = rotatieHeaderFases.indexOf(fase);
   document.querySelectorAll('#rotatie-header-balk .rotatie-header-stap').forEach((s,i)=> s.classList.toggle('actief', i === headerIndex));
+  document.querySelectorAll('#rotatie-titel .rt-item').forEach(el => el.classList.toggle('actief', el.dataset.fase === fase));
 
   /* Bij het tonen opnieuw opmeten: een verborgen vak heeft geen
      hoogte, dus dan valt er niets te schalen. */
