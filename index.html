@@ -337,40 +337,45 @@ function dagtipVanVandaag(){
   }
   .rotatie-overlay.tonen{ opacity:1; pointer-events:auto; }
 
-  /* Kleine, vaste kopbalk bovenaan elk rotatiescherm: logo + klok,
-     en een balk die aangeeft waar je zit in de rotatie. Bewust
-     compacter dan de kop op pagina 1 — dit mag niet concurreren
-     met de eigenlijke inhoud van elk scherm. */
+  /* Kleine, vaste kopbalk bovenaan elk rotatiescherm: logo, titel
+     en klok op één rij, en een balk die aangeeft waar je zit in
+     de rotatie. Bewust compacter dan de kop op pagina 1 — dit mag
+     niet concurreren met de eigenlijke inhoud van elk scherm. */
   .rotatie-header{ position:absolute; top:28px; left:46px; right:46px; }
-  .rotatie-header-top{ display:flex; align-items:center; justify-content:space-between; }
-  .rotatie-header-brand{ display:flex; align-items:center; gap:9px; }
-  .rotatie-header-brand img{ height:24px; width:auto; display:block; }
+  .rotatie-header-top{
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+  }
+  .rotatie-header-brand{ display:flex; align-items:center; gap:9px; flex:0 0 auto; }
+  .rotatie-header-brand img{ height:26px; width:auto; display:block; }
   body.nacht .rotatie-header-brand img{ background:#fff; padding:3px 7px; border-radius:7px; }
   .rotatie-header-wordmark{
-    font-family:'Manrope',sans-serif; font-weight:800; font-size:15px;
+    font-family:'Manrope',sans-serif; font-weight:800; font-size:17px;
     color:var(--red); letter-spacing:0.02em;
   }
-  .rotatie-header-klok{ display:flex; align-items:baseline; gap:11px; }
+  .rotatie-header-klok{
+    display:flex; align-items:baseline; gap:12px; flex:0 0 auto; white-space:nowrap;
+  }
   .rotatie-header-tijd{
-    font-family:'Manrope',sans-serif; font-weight:700; font-size:19px;
+    font-family:'Manrope',sans-serif; font-weight:700; font-size:28px;
     color:var(--ink); font-variant-numeric: tabular-nums;
   }
   .rotatie-header-datum{
-    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--ink-soft);
     text-transform:capitalize;
   }
-  .rotatie-header-balk{ display:flex; gap:0; margin-top:14px; }
+  .rotatie-header-balk{ display:flex; gap:0; margin-top:14px; width:100%; }
   .rotatie-header-stap{ flex:1; }
   .rotatie-header-stap .seg{
-    width:100%; height:3px; background:var(--card-border);
+    width:100%; height:4px; background:rgba(62,61,68,0.16);
     transition: background .3s ease;
   }
+  body.nacht .rotatie-header-stap .seg{ background:rgba(234,228,216,0.16); }
   .rotatie-header-stap:first-child .seg{ border-radius:2px 0 0 2px; }
   .rotatie-header-stap:last-child .seg{ border-radius:0 2px 2px 0; }
   .rotatie-header-stap.actief .seg{ background:var(--red); }
 
   .rotatie-titel{
-    text-align:center; margin-top:16px;
+    flex:1; min-width:0; text-align:center;
     font-family:'Manrope',sans-serif; font-weight:800; font-size:19px;
     letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-soft);
   }
@@ -701,18 +706,18 @@ function dagtipVanVandaag(){
              onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
         <span class="rotatie-header-wordmark" style="display:none;">VARDA</span>
       </div>
+      <div class="rotatie-titel" id="rotatie-titel">
+        <span class="rt-item" data-fase="bezetting">👷 <span>Wie werkt waar</span> <span class="telling" id="bez-telling"></span></span>
+        <span class="rt-item" data-fase="kaart">📍 <span>Werven vandaag</span> <span class="telling" id="kaart-telling"></span></span>
+        <span class="rt-item" data-fase="uren-nieuw">🆕 <span>Opgestart deze maand</span> <span class="telling" id="uren-telling-nieuw"></span></span>
+        <span class="rt-item" data-fase="uren-lopend">⏱️ <span>Reeds lopende werven</span> <span class="telling" id="uren-telling-lopend"></span></span>
+        <span class="rt-item" data-fase="verlof">🌴 <span>Verlof komende 4 weken</span></span>
+        <span class="rt-item" data-fase="dagtip">💡 <span>Tip van de dag</span></span>
+      </div>
       <div class="rotatie-header-klok">
         <span class="rotatie-header-tijd" id="clock-rotatie">--:--</span>
         <span class="rotatie-header-datum" id="date-rotatie">-</span>
       </div>
-    </div>
-    <div class="rotatie-titel" id="rotatie-titel">
-      <span class="rt-item" data-fase="bezetting">👷 <span>Wie werkt waar</span> <span class="telling" id="bez-telling"></span></span>
-      <span class="rt-item" data-fase="kaart">📍 <span>Werven vandaag</span> <span class="telling" id="kaart-telling"></span></span>
-      <span class="rt-item" data-fase="uren-nieuw">🆕 <span>Opgestart deze maand</span> <span class="telling" id="uren-telling-nieuw"></span></span>
-      <span class="rt-item" data-fase="uren-lopend">⏱️ <span>Reeds lopende werven</span> <span class="telling" id="uren-telling-lopend"></span></span>
-      <span class="rt-item" data-fase="verlof">🌴 <span>Verlof komende 4 weken</span></span>
-      <span class="rt-item" data-fase="dagtip">💡 <span>Tip van de dag</span></span>
     </div>
     <div class="rotatie-header-balk" id="rotatie-header-balk"></div>
   </div>
