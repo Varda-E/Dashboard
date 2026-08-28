@@ -719,10 +719,14 @@ function toonBronLabel(){
     el.style.cssText = 'position:fixed;left:22px;bottom:22px;z-index:40;font-family:monospace;font-size:11px;padding:6px 12px;border-radius:8px;background:rgba(188,23,2,0.10);color:#bc1702;border:1px solid rgba(188,23,2,0.3);';
     document.body.appendChild(el);
   }
+  const tijd = laatsteVerversing
+    ? laatsteVerversing.toLocaleTimeString('nl-BE', {hour:'2-digit', minute:'2-digit'})
+    : null;
+  const laatstePoging = tijd ? ' (laatst geprobeerd: ' + tijd + ')' : '';
   if(sheetStatus === 'uit')  el.textContent = '⚙ Sheet-links nog niet ingevuld — reservelijst actief';
-  if(sheetStatus === 'fout') el.textContent = '⚠ Sheet niet bereikbaar — reservelijst actief';
+  if(sheetStatus === 'fout') el.textContent = '⚠ Sheet niet bereikbaar — reservelijst actief' + laatstePoging;
   if(sheetStatus === 'laden') el.textContent = '… gegevens laden';
-  if(sheetStatus === 'deels') el.textContent = '⚠ Niet geladen: ' + mislukteTabbladen.join(', ');
+  if(sheetStatus === 'deels') el.textContent = '⚠ Niet geladen: ' + mislukteTabbladen.join(', ') + laatstePoging;
 }
 
 /* ---------------- CSV UIT DE SHEET ---------------- */
@@ -799,13 +803,22 @@ function normGetal(s){
 }
 
 async function haalTabblad(url){
-  const res = await fetch(url, { cache: 'no-store' });
-  if(!res.ok) throw new Error('HTTP ' + res.status);
-  const tekst = await res.text();
-  /* Een deellink geeft geen CSV terug maar een inlogpagina. Dat
-     herkennen we hieraan, zodat de melding duidelijk is. */
-  if(/^\s*</.test(tekst)) throw new Error('geen CSV — is dit wel een publicatielink?');
-  return csvNaarObjecten(tekst);
+  /* Zonder tijdslimiet zou een verzoek dat nooit antwoordt de
+     hele ophaling voor onbepaalde tijd laten hangen — riskant
+     als hier weken niemand naar kijkt. */
+  const controller = new AbortController();
+  const wachttijd = setTimeout(() => controller.abort(), 12000);
+  try{
+    const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const tekst = await res.text();
+    /* Een deellink geeft geen CSV terug maar een inlogpagina. Dat
+       herkennen we hieraan, zodat de melding duidelijk is. */
+    if(/^\s*</.test(tekst)) throw new Error('geen CSV — is dit wel een publicatielink?');
+    return csvNaarObjecten(tekst);
+  } finally {
+    clearTimeout(wachttijd);
+  }
 }
 
 /* Eén onbereikbaar tabblad mag de andere vijf niet meeslepen. */
@@ -1366,9 +1379,11 @@ function wmoLookup(code){ return WMO[code] || ['🌡️','Onbekend']; }
 
 async function laadWeer(){
   document.getElementById('weer-plaats').textContent = LOCATIE.naam;
+  const controller = new AbortController();
+  const wachttijd = setTimeout(() => controller.abort(), 12000);
   try{
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${LOCATIE.lat}&longitude=${LOCATIE.lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe%2FBrussels&forecast_days=4`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
     const data = await res.json();
     const [icon, omschrijving] = wmoLookup(data.current.weather_code);
     const temp = Math.round(data.current.temperature_2m);
@@ -1388,6 +1403,8 @@ async function laadWeer(){
       <div class="weer-dagen">${dagenHtml}</div>`;
   }catch(e){
     document.getElementById('weer-body').innerHTML = `<div class="weer-omschrijving">Weer kon niet geladen worden. (In de Claude-preview is dit normaal; online werkt het wel.)</div>`;
+  } finally {
+    clearTimeout(wachttijd);
   }
 }
 laadWeer(); setInterval(laadWeer, 30*60*1000);
@@ -1424,6 +1441,7 @@ function cfgRender(){
     <div class="cfg-rij"><span>Mededelingen</span><span class="mono">${DATA.med.length} rijen</span></div>
     <div class="cfg-rij"><span>Bezetting</span><span class="mono">${BEZETTING.length} rijen</span></div>
     <div class="cfg-rij"><span>Uren</span><span class="mono">${UREN.length} rijen</span></div>
+    <div class="cfg-rij"><span>Wagenpark</span><span class="mono">${WAGENS.length} rijen</span></div>
     <div class="cfg-note" style="margin-top:18px;">
       Klopt er iets niet? Controleer in de Sheet of de kolomkoppen op rij 1
       nog juist staan en of de datums als <b>JJJJ-MM-DD</b> zijn ingevuld.
