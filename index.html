@@ -2,12 +2,10 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title></title>
+<title>Varda Dashboard</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 </style>
-<!-- Kaartbibliotheek (Leaflet). Vereist internet; zonder verbinding
-     toont de kaartpagina een nette melding in plaats van een leeg vlak. -->
 </head>
 <body>
 
@@ -50,6 +48,10 @@ const SHEET_URLS = {
      waarvan de keuring binnenkort vervalt, verschijnen in de
      mededelingenbalk. */
   wagens:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=144218018&single=true&output=csv",
+  /* Tabblad "Planning": weekplanning, opgeslagen vanuit planning.html. */
+  planning:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1108810088&single=true&output=csv",
+  /* Tabblad "Actiepunten": doorlopende lijst uit de planningsmeeting. */
+  acties:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=820073710&single=true&output=csv",
 };
 
 /* ============================================================
@@ -70,6 +72,8 @@ let VERLOF = [];
 let BEZETTING = [];
 let UREN = [];
 let WAGENS = [];
+let PLANNING = [];
+let ACTIES = [];
 
 let DAGTIPS = [];
 /* Elke dag één tip, in een volgorde die per ronde geschud wordt:
@@ -602,6 +606,49 @@ function dagtipVanVandaag(){
   }
   .verlof-leeg{ padding:26px; font-size:15px; color:var(--ink-soft); text-align:center; }
 
+  /* ---------- PLANNING ---------- */
+  .bez-persoon .extra{
+    margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--ink-soft); font-weight:400;
+  }
+
+  /* ---------- ACTIEPUNTEN ---------- */
+  .act-vak{ width:90vw; max-width:1400px; height:74vh; overflow:hidden; }
+  .act-lijst{
+    background:var(--card); border:1px solid var(--card-border); border-radius:20px;
+    box-shadow:var(--shadow); padding:8px 34px 12px 34px; transform-origin: top center;
+  }
+  .act-rij{
+    display:grid; grid-template-columns: 34px minmax(0,1fr) 260px 220px; gap:20px;
+    align-items:center; padding:17px 0; border-bottom:1px solid var(--card-border);
+  }
+  .act-rij:last-child{ border-bottom:none; }
+  .act-kop{
+    font-size:12px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-soft); padding:14px 0 10px 0;
+  }
+  .act-vink{
+    width:24px; height:24px; border-radius:7px; border:2px solid var(--card-border);
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff;
+  }
+  .act-wat{ font-weight:600; font-size:21px; line-height:1.3; }
+  .act-werf{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:400;
+    color:var(--ink-soft); margin-top:3px;
+  }
+  .act-wie{ font-size:18px; color:var(--ink-soft); }
+  .act-dl{ font-family:'IBM Plex Mono',monospace; font-size:16px; }
+  .act-rij.laat .act-dl{ color:var(--red); font-weight:600; }
+  .act-rij.laat .act-vink{ border-color:var(--red); }
+  .act-rij.klaar{ opacity:0.5; }
+  .act-rij.klaar .act-wat{ text-decoration:line-through; font-weight:500; }
+  .act-rij.klaar .act-vink{ background:var(--teal); border-color:var(--teal); }
+  .act-sectie{
+    font-size:12px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-soft); padding:22px 0 6px 0; border-bottom:1px solid var(--card-border);
+  }
+  .act-leeg{ font-size:16px; color:var(--ink-soft); text-align:center; padding:30px; }
+
   .rotatie-dots{
     position:fixed; bottom:26px; left:50%; transform:translateX(-50%);
     display:flex; gap:10px; z-index:35;
@@ -669,10 +716,7 @@ function dagtipVanVandaag(){
   </main>
 </div>
 
-<div class="rotatie-dots" id="rotatie-dots">
-  <div class="dot actief"></div><div class="dot"></div><div class="dot"></div>
-  <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
-</div>
+<div class="rotatie-dots" id="rotatie-dots"></div>
 
 <button class="cfg-btn" onclick="cfgOpen()" title="Gegevens beheren">⚙️</button>
 <button class="cfg-btn rotatie-btn" onclick="rotatieVolgende(); rotatieHerstart();" title="Volgend scherm">⏭️</button>
@@ -699,9 +743,11 @@ function dagtipVanVandaag(){
       <div class="rotatie-titel" id="rotatie-titel">
         <span class="rt-item" data-fase="bezetting">👷 <span>Wie werkt waar</span> <span class="telling" id="bez-telling"></span></span>
         <span class="rt-item" data-fase="kaart">📍 <span>Werven vandaag</span> <span class="telling" id="kaart-telling"></span></span>
+        <span class="rt-item" data-fase="planning">🗓️ <span id="plan-titel">Planning vandaag</span> <span class="telling" id="plan-telling"></span></span>
         <span class="rt-item" data-fase="uren-nieuw">🆕 <span>Opgestart deze maand</span> <span class="telling" id="uren-telling-nieuw"></span></span>
         <span class="rt-item" data-fase="uren-lopend">⏱️ <span>Reeds lopende werven</span> <span class="telling" id="uren-telling-lopend"></span></span>
         <span class="rt-item" data-fase="verlof">🌴 <span>Verlof komende 4 weken</span></span>
+        <span class="rt-item" data-fase="acties">✅ <span>Actiepunten</span> <span class="telling" id="acties-telling"></span></span>
         <span class="rt-item" data-fase="dagtip">💡 <span>Tip van de dag</span></span>
       </div>
       <div class="rotatie-header-klok">
@@ -720,6 +766,9 @@ function dagtipVanVandaag(){
       <div class="kaart-legende" id="kaart-legende"></div>
     </div>
   </div>
+  <div class="rotatie-slide" id="slide-planning">
+    <div class="bez-vak"><div class="bez-grid" id="plan-grid"></div></div>
+  </div>
   <div class="rotatie-slide" id="slide-uren-nieuw">
     <div class="uren-vak"><div class="uren-grid kolommen-2" id="uren-grid-nieuw"></div></div>
   </div>
@@ -734,6 +783,9 @@ function dagtipVanVandaag(){
       <span class="leg-item"><span class="leg-blok feestdag"></span> Feestdag</span>
     </div>
     <div class="gantt-wrap" id="gantt-wrap"></div>
+  </div>
+  <div class="rotatie-slide" id="slide-acties">
+    <div class="act-vak"><div class="act-lijst" id="act-lijst"></div></div>
   </div>
   <div class="rotatie-slide" id="slide-dagtip">
     <div class="dagtip-kaart">
@@ -894,7 +946,7 @@ async function laadUitSheet(){
 
   mislukteTabbladen = [];
   try{
-    const [aanb, verlof, verj, tips, med, bezetting, uren, verjExtra, wagens] = await Promise.all([
+    const [aanb, verlof, verj, tips, med, bezetting, uren, verjExtra, wagens, planning, acties] = await Promise.all([
       haalVeilig('aanbestedingen', urls.aanb,      bruikbaar, 0),
       haalVeilig('verlof',         urls.verlof,    bruikbaar, 150),
       haalVeilig('verjaardagen',   urls.verj,      bruikbaar, 300),
@@ -904,6 +956,8 @@ async function laadUitSheet(){
       haalVeilig('uren',           urls.uren,      bruikbaar, 900),
       haalVeilig('verj. extra',    urls.verjExtra, bruikbaar, 1050),
       haalVeilig('wagenpark',      urls.wagens,    bruikbaar, 1200),
+      haalVeilig('planning',       urls.planning,  bruikbaar, 1350),
+      haalVeilig('actiepunten',    urls.acties,    bruikbaar, 1500),
     ]);
 
     /* Een leeg tabblad mag bestaande gegevens niet wissen. */
@@ -984,6 +1038,21 @@ async function laadUitSheet(){
       })).filter(x => x.plaat);
       if(r.length) WAGENS = r;
     }
+    if(planning && planning.length){
+      const r = planning.map(x => ({
+        datum: normDatum(x.datum), code: x.code || '', werf: x.werf || '',
+        stad: x.stad || '', naam: x.naam || ''
+      })).filter(x => x.datum && x.naam && x.werf);
+      if(r.length) PLANNING = r;
+    }
+    /* Een lege lijst actiepunten is hier geldig: alles afgewerkt. */
+    if(acties){
+      ACTIES = acties.map(x => ({
+        wat: x.wat || '', wie: x.wie || '', deadline: normDatum(x.deadline),
+        status: (x.status || '').toLowerCase() === 'klaar' ? 'klaar' : 'open',
+        afgerond: normDatum(x.afgerond), werf: x.werf || ''
+      })).filter(x => x.wat);
+    }
 
     sheetStatus = mislukteTabbladen.length ? 'deels' : 'ok';
     laatsteVerversing = new Date();
@@ -998,6 +1067,8 @@ async function laadUitSheet(){
   renderBezetting();
   renderKaart();
   renderUren();
+  renderPlanning();
+  renderActies();
   toonDagtip();
 }
 
@@ -1320,6 +1391,136 @@ function renderUren(){
   renderUrenBlok('uren-grid-lopend', 'uren-telling-lopend', rijen.filter(r => !isNieuw(r)), false);
 }
 
+/* ---------------- PLANNING ----------------
+   De planning van één dag, in dezelfde kaarten als "Wie werkt waar".
+   Van maandag tot zaterdagvoormiddag is dat vandaag; vanaf zaterdag
+   12u en op zondag al de volgende maandag. Verlof en ziekte uit Odoo
+   komen er vanzelf bij als kaart "Afwezig". */
+const PLAN_AFWEZIG = ['VERLOF', 'ZIEK', 'OPLEIDING'];
+const PLAN_INTERN  = ['MAGAZIJN', 'KANTOOR'];
+const ymdLokaal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+function planningDag(){
+  const nu = new Date();
+  const d = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate());
+  if(d.getDay() === 0) d.setDate(d.getDate() + 1);
+  else if(d.getDay() === 6 && nu.getHours() >= 12) d.setDate(d.getDate() + 2);
+  return d;
+}
+
+function renderPlanning(){
+  const wrap = document.getElementById('plan-grid');
+  if(!wrap) return;
+  const dag = planningDag();
+  const sleutel = ymdLokaal(dag);
+  const isVandaag = sleutel === ymdLokaal(new Date());
+  const dagTekst = dag.toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long' });
+  const titel = document.getElementById('plan-titel');
+  if(titel) titel.textContent = isVandaag ? 'Planning vandaag' : 'Planning ' + dagTekst;
+  const telling = document.getElementById('plan-telling');
+
+  const perWerf = {}, afwezig = {};
+  PLANNING.filter(p => p.datum === sleutel).forEach(p => {
+    if(PLAN_AFWEZIG.includes(p.code)){ afwezig[p.naam] = p.werf; return; }
+    const intern = PLAN_INTERN.includes(p.code);
+    const k = p.code || p.werf.toLowerCase();
+    if(!perWerf[k]) perWerf[k] = {
+      werf: p.werf, code: intern ? '' : p.code, stad: p.stad,
+      soort: intern ? 'intern' : 'werf', mensen: []
+    };
+    if(!perWerf[k].mensen.some(m => m.naam === p.naam)) perWerf[k].mensen.push({ naam: p.naam });
+  });
+
+  const groepen = Object.values(perWerf).sort((a,b)=>{
+    if(a.soort !== b.soort) return a.soort === 'werf' ? -1 : 1;
+    return (b.mensen.length - a.mensen.length) || a.werf.localeCompare(b.werf);
+  });
+
+  if(!groepen.length){
+    if(telling) telling.textContent = '';
+    wrap.innerHTML = `<div class="bez-leeg">Nog geen planning voor ${isVandaag ? 'vandaag' : esc(dagTekst)}.</div>`;
+    return;
+  }
+
+  VERLOF.forEach(v => {
+    if(v.van <= sleutel && v.tot >= sleutel && !afwezig[v.naam]){
+      afwezig[v.naam] = /^\[Z\]/i.test(v.soort) ? 'Ziek' : 'Verlof';
+    }
+  });
+  const afwNamen = Object.keys(afwezig).sort((a,b)=> a.localeCompare(b));
+  if(afwNamen.length) groepen.push({
+    werf: 'Afwezig', code: '', stad: '', soort: 'onderweg',
+    mensen: afwNamen.map(n => ({ naam: n, extra: afwezig[n] }))
+  });
+
+  const mensen = groepen.filter(g => g.soort !== 'onderweg').reduce((n,g)=> n + g.mensen.length, 0);
+  const werven = groepen.filter(g => g.soort === 'werf').length;
+  if(telling) telling.textContent = `${mensen} mensen · ${werven} ` + (werven === 1 ? 'werf' : 'werven')
+                                  + (afwNamen.length ? ` · ${afwNamen.length} afwezig` : '');
+
+  wrap.innerHTML = groepen.map(g => {
+    g.mensen.sort((a,b)=> a.naam.localeCompare(b.naam));
+    const meta = [g.code, g.stad].filter(Boolean).join(' · ');
+    return `<div class="bez-kaart ${esc(g.soort)}">
+      <div class="bez-kop">
+        <div class="bez-werf">${esc(g.werf)}</div>
+        <div class="bez-aantal">${g.mensen.length}</div>
+      </div>
+      ${meta ? `<div class="bez-meta">${esc(meta)}</div>` : ''}
+      <div class="bez-mensen ${g.mensen.length > 5 ? 'dubbel' : ''}">
+        ${g.mensen.map(p => `<div class="bez-persoon"><span class="nm">${esc(p.naam)}</span>${p.extra ? `<span class="extra">${esc(p.extra)}</span>` : ''}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  pasPassend(wrap, wrap.parentElement);
+}
+
+/* ---------------- ACTIEPUNTEN ----------------
+   Open punten op deadline (zonder deadline achteraan), daarna wat
+   de laatste 7 dagen is afgewerkt, zodat dat ook gezien wordt. */
+function renderActies(){
+  const wrap = document.getElementById('act-lijst');
+  if(!wrap) return;
+  const vandaag = ymdLokaal(new Date());
+  const grensD = new Date(); grensD.setDate(grensD.getDate() - 7);
+  const grens = ymdLokaal(grensD);
+
+  const open = ACTIES.filter(a => a.status !== 'klaar')
+    .sort((a,b)=> (a.deadline || '9999').localeCompare(b.deadline || '9999'));
+  const klaar = ACTIES.filter(a => a.status === 'klaar' && a.afgerond >= grens)
+    .sort((a,b)=> b.afgerond.localeCompare(a.afgerond));
+  const laat = open.filter(a => a.deadline && a.deadline < vandaag).length;
+
+  const telling = document.getElementById('acties-telling');
+  if(telling) telling.textContent = open.length + ' open' + (laat ? ' · ' + laat + ' over tijd' : '');
+
+  if(!open.length && !klaar.length){
+    wrap.innerHTML = `<div class="act-leeg">Geen open actiepunten.</div>`;
+    return;
+  }
+
+  const dl = a => {
+    if(!a.deadline) return '—';
+    const [j,m,d] = a.deadline.split('-').map(Number);
+    const t = new Date(j, m-1, d).toLocaleDateString('nl-BE', { weekday:'short', day:'numeric', month:'short' });
+    return a.deadline < vandaag && a.status !== 'klaar' ? t + ' · te laat' : t;
+  };
+  const rij = a => `<div class="act-rij ${a.status === 'klaar' ? 'klaar' : (a.deadline && a.deadline < vandaag ? 'laat' : '')}">
+      <div class="act-vink">${a.status === 'klaar' ? '✓' : ''}</div>
+      <div class="act-wat">${esc(a.wat)}${a.werf ? `<div class="act-werf">${esc(a.werf)}</div>` : ''}</div>
+      <div class="act-wie">${esc(a.wie || '—')}</div>
+      <div class="act-dl">${esc(dl(a))}</div>
+    </div>`;
+
+  wrap.innerHTML =
+    `<div class="act-rij act-kop"><div></div><div>Wat</div><div>Wie</div><div>Tegen</div></div>` +
+    (open.length ? open.map(rij).join('') : `<div class="act-leeg">Alles afgewerkt.</div>`) +
+    (klaar.length ? `<div class="act-sectie">Recent afgewerkt</div>` + klaar.map(rij).join('') : '');
+
+  pasPassend(wrap, wrap.parentElement);
+}
+
 /* ---------------- KAART (SVG, geen bibliotheek) ----------------
    De omtrek van België is een vast SVG-pad in webmercator-projectie.
    Coördinaten worden met dezelfde projectie omgerekend, zodat de
@@ -1475,7 +1676,7 @@ async function laadWeer(){
       <div class="weer-extra"><span>Wind ${wind} km/u</span></div>
       <div class="weer-dagen">${dagenHtml}</div>`;
   }catch(e){
-    document.getElementById('weer-body').innerHTML = `<div class="weer-omschrijving">Weer kon niet geladen worden. (In de Claude-preview is dit normaal; online werkt het wel.)</div>`;
+    document.getElementById('weer-body').innerHTML = `<div class="weer-omschrijving">Weer kon niet geladen worden.</div>`;
   } finally {
     clearTimeout(wachttijd);
   }
@@ -1515,6 +1716,8 @@ function cfgRender(){
     <div class="cfg-rij"><span>Bezetting</span><span class="mono">${BEZETTING.length} rijen</span></div>
     <div class="cfg-rij"><span>Uren</span><span class="mono">${UREN.length} rijen</span></div>
     <div class="cfg-rij"><span>Wagenpark</span><span class="mono">${WAGENS.length} rijen</span></div>
+    <div class="cfg-rij"><span>Planning</span><span class="mono">${PLANNING.length} rijen</span></div>
+    <div class="cfg-rij"><span>Actiepunten</span><span class="mono">${ACTIES.length} rijen</span></div>
     <div class="cfg-note" style="margin-top:18px;">
       Klopt er iets niet? Controleer in de Sheet of de kolomkoppen op rij 1
       nog juist staan en of de datums als <b>JJJJ-MM-DD</b> zijn ingevuld.
@@ -1677,6 +1880,8 @@ renderAll();
 renderVerlofPagina();
 renderBezetting();
 renderUren();
+renderPlanning();
+renderActies();
 toonDagtip();
 toonBronLabel();
 laadUitSheet();
@@ -1693,6 +1898,8 @@ function herbereken(){
   renderBezetting();
   renderKaart();
   renderUren();
+  renderPlanning();
+  renderActies();
 }
 window.addEventListener('resize', ()=>{
   clearTimeout(herberekenTimer);
@@ -1700,7 +1907,7 @@ window.addEventListener('resize', ()=>{
 });
 
 /* ---------------- ROTATIE ---------------- */
-const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'uren-nieuw', 'uren-lopend', 'verlof', 'dagtip'];
+const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'planning', 'uren-nieuw', 'uren-lopend', 'verlof', 'acties', 'dagtip'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
@@ -1711,6 +1918,12 @@ const rotatieHeaderFases = rotatieFases.filter(f => f !== 'dashboard');
   const balk = document.getElementById('rotatie-header-balk');
   if(!balk) return;
   balk.innerHTML = rotatieHeaderFases.map(()=> '<div class="rotatie-header-stap"><div class="seg"></div></div>').join('');
+})();
+
+/* Eén stip per scherm, dus nooit meer met de hand bijtellen. */
+(function bouwRotatieDots(){
+  const el = document.getElementById('rotatie-dots');
+  if(el) el.innerHTML = rotatieFases.map((_, i)=> `<div class="dot${i === 0 ? ' actief' : ''}"></div>`).join('');
 })();
 
 function rotatieVolgende(){ rotatieNaar(rotatieIndex + 1); }
@@ -1724,6 +1937,8 @@ function rotatieNaar(index){
   overlay.classList.toggle('tonen', fase !== 'dashboard');
   document.getElementById('slide-bezetting').classList.toggle('tonen', fase === 'bezetting');
   document.getElementById('slide-kaart').classList.toggle('tonen', fase === 'kaart');
+  document.getElementById('slide-planning').classList.toggle('tonen', fase === 'planning');
+  document.getElementById('slide-acties').classList.toggle('tonen', fase === 'acties');
   document.getElementById('slide-uren-nieuw').classList.toggle('tonen', fase === 'uren-nieuw');
   document.getElementById('slide-uren-lopend').classList.toggle('tonen', fase === 'uren-lopend');
   document.getElementById('slide-verlof').classList.toggle('tonen', fase === 'verlof');
@@ -1738,6 +1953,8 @@ function rotatieNaar(index){
   if(fase === 'kaart')     renderKaart();
   if(fase === 'bezetting') renderBezetting();
   if(fase === 'verlof')    renderVerlofPagina();
+  if(fase === 'planning')  renderPlanning();
+  if(fase === 'acties')    renderActies();
   if(fase === 'uren-nieuw' || fase === 'uren-lopend') renderUren();
 }
 
