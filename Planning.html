@@ -77,6 +77,10 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px
 .plan thead th.day .vrij.has{color:var(--warn)}
 .plan thead th.day .vrij.none{color:var(--ok)}
 .plan thead th.day.today{box-shadow:inset 0 3px 0 var(--red)}
+.plan thead th.day.feest{background:#4a4952;color:#fff}
+.plan thead th.day.feest .dt{color:rgba(255,255,255,.7)}
+.plan thead th.day .vrij.feest{color:#fff;font-weight:600}
+.plan td.cell.feest{background:repeating-linear-gradient(135deg,rgba(74,73,82,.07) 0 7px,transparent 7px 14px)}
 .plan td.site{width:230px;padding:10px 12px;border-right:1px solid var(--line);background:var(--surface);position:sticky;left:0;z-index:1}
 .site .kop{display:flex;gap:6px;align-items:flex-start}
 .site .nm{font-weight:650;font-size:13.5px;line-height:1.25;flex:1}
@@ -209,6 +213,7 @@ tr.absent .chip::before{background:var(--steel)}
         <span><b style="background:var(--warn)"></b>dubbel ingepland of afwezig</span>
         <span><b style="background:var(--steel)"></b>afwezig</span>
         <span><b style="background:var(--line)"></b>nog niet ingepland</span>
+        <span><b style="background:#4a4952"></b>feestdag</span>
       </div>
 
       <!-- ============ ACTIEPUNTEN ============ -->
@@ -287,6 +292,23 @@ function maandagVan(d){ const x=new Date(d); x.setHours(12,0,0,0); x.setDate(x.g
 function plusDagen(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function isoWeek(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const n=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-n); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
 const fmt = d => d.getDate()+" "+MAANDEN[d.getMonth()];
+/* Belgische wettelijke feestdagen, met Pasen berekend. */
+function paasDatum(j){
+  const a=j%19,b=Math.floor(j/100),c=j%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+        h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  return new Date(j, Math.floor((h+l-7*m+114)/31)-1, ((h+l-7*m+114)%31)+1, 12);
+}
+function feestdagenVan(j){
+  const p = paasDatum(j);
+  return {
+    [ymd(new Date(j,0,1,12))]:"Nieuwjaar", [ymd(plusDagen(p,1))]:"Paasmaandag", [ymd(new Date(j,4,1,12))]:"Dag van de Arbeid",
+    [ymd(plusDagen(p,39))]:"O.L.H.-Hemelvaart", [ymd(plusDagen(p,50))]:"Pinkstermaandag", [ymd(new Date(j,6,21,12))]:"Nationale feestdag",
+    [ymd(new Date(j,7,15,12))]:"O.L.V.-Hemelvaart", [ymd(new Date(j,10,1,12))]:"Allerheiligen", [ymd(new Date(j,10,11,12))]:"Wapenstilstand",
+    [ymd(new Date(j,11,25,12))]:"Kerstmis"
+  };
+}
+function feestdagOp(d){ return feestdagenVan(d.getFullYear())[ymd(d)] || ""; }
+
 function dagIndex(datum, maandag){ const i=Math.round((vanYmd(datum)-maandag)/864e5); return (i>=0&&i<N)?i:-1; }
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
@@ -473,6 +495,8 @@ function render(){
   const lasten = [...Array(N).keys()].map(dagLast);
   const vrijaf = [...Array(N).keys()].map(verlofOp);
   const vandaag = ymd(new Date());
+  const feest = [...Array(N).keys()].map(i=>feestdagOp(plusDagen(week,i)));
+  const feestKlas = d => feest[d] ? " feest" : "";
 
   const isConflict = (naam, d, rij) => {
     if(soortVan(rij.code)==="afwezig") return false;
@@ -484,8 +508,10 @@ function render(){
   DAGEN.forEach((dag,i)=>{
     const dt = plusDagen(week,i);
     const vrij = ploeg.filter(n=>!lasten[i][n] && !vrijaf[i][n]).length;
-    h += `<th class="day${ymd(dt)===vandaag?" today":""}"><div class="d">${dag}</div><div class="dt">${fmt(dt)}</div>
-          <div class="vrij ${vrij?"has":"none"}">${vrij ? vrij+" niet ingepland" : "iedereen ingepland"}</div></th>`;
+    const onder = feest[i]
+      ? `<div class="vrij feest">Feestdag · ${feest[i]}</div>`
+      : `<div class="vrij ${vrij?"has":"none"}">${vrij ? vrij+" niet ingepland" : "iedereen ingepland"}</div>`;
+    h += `<th class="day${ymd(dt)===vandaag?" today":""}${feestKlas(i)}"><div class="d">${dag}</div><div class="dt">${fmt(dt)}</div>${onder}</th>`;
   });
   h += `</tr></thead><tbody>`;
 
@@ -498,7 +524,7 @@ function render(){
       ${soort!=="afwezig" ? `<button class="rm" data-rm="${esc(r.id)}" title="Werf uit deze week halen">×</button>` : ""}</div>
       ${meta ? `<div class="meta">${esc(meta)}</div>` : ""}<div class="cnt">${tot} mandagen</div></td>`;
     for(let d=0; d<N; d++){
-      s += `<td class="cell" data-site="${esc(r.id)}" data-day="${d}"><div class="chips">`;
+      s += `<td class="cell${feestKlas(d)}" data-site="${esc(r.id)}" data-day="${d}"><div class="chips">`;
       r.dagen[d].forEach(n=>{
         const cf = isConflict(n,d,r);
         const waarom = cf ? (vrijaf[d][n] ? " — volgens Odoo: " + vrijaf[d][n] : " — dubbel ingepland") : "";
@@ -520,7 +546,7 @@ function render(){
   /* Verlof uit Odoo: vast, niet te verslepen — aanpassen gebeurt in Odoo. */
   h += `<tr class="absent"><td class="site"><div class="nm">Verlof &amp; ziekte</div><div class="meta">uit Odoo</div></td>`;
   for(let d=0; d<N; d++){
-    h += `<td class="cell"><div class="chips">` +
+    h += `<td class="cell${feestKlas(d)}"><div class="chips">` +
       Object.keys(vrijaf[d]).sort((a,b)=>a.localeCompare(b)).map(n=>`<div class="chip vast" title="${esc(n+" — "+vrijaf[d][n])}"><span>${esc(n)}</span></div>`).join("") +
       `</div></td>`;
   }
