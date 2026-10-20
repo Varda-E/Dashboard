@@ -50,8 +50,8 @@ const SHEET_URLS = {
   wagens:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=144218018&single=true&output=csv",
   /* Tabblad "Planning": weekplanning, opgeslagen vanuit planning.html. */
   planning:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=1108810088&single=true&output=csv",
-  /* Tabblad "Actiepunten": doorlopende lijst uit de planningsmeeting. */
-  acties:    "https://docs.google.com/spreadsheets/d/e/2PACX-1vST3p0745JFP5jAQBH2CrQMQxnfaT58nC3blkzElSbvvcGFFje-8icmxe6hcv1ln_CVUqP5Tv4UhVGo/pub?gid=820073710&single=true&output=csv",
+  /* Actiepunten worden bewust niet opgehaald: intern, enkel zichtbaar
+     in planning.html (die leest ze via de webapp, met pincode). */
 };
 
 /* ============================================================
@@ -612,6 +612,47 @@ function dagtipVanVandaag(){
     color:var(--ink-soft); font-weight:400;
   }
 
+  /* ---------- PLANNING (weekoverzicht) ---------- */
+  .pw-vak{ width:96vw; max-width:2000px; height:83vh; overflow:hidden; }
+  .pw-tabel{
+    display:grid; grid-template-columns: minmax(220px, 1.15fr) repeat(5, 1fr) 0.75fr;
+    background:var(--card); border:1px solid var(--card-border); border-radius:18px;
+    box-shadow:var(--shadow); overflow:hidden; transform-origin: top center;
+  }
+  .pw-kop{
+    padding:9px 10px 8px 10px; border-bottom:2px solid var(--card-border);
+    display:flex; align-items:baseline; gap:8px; border-top:4px solid transparent;
+  }
+  .pw-kop.vandaag{ border-top-color:var(--red); background:rgba(188,23,2,0.06); }
+  .pw-dag{ font-family:'Manrope',sans-serif; font-weight:800; font-size:16px; }
+  .pw-kop.vandaag .pw-dag{ color:var(--red); }
+  .pw-datum{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); }
+  .pw-werf{ padding:5px 12px 5px 16px; border-bottom:1px solid var(--card-border); min-width:0; }
+  .pw-wnaam{
+    font-weight:700; font-size:15px; line-height:1.15;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .pw-werf.intern .pw-wnaam{ color:var(--brown); }
+  .pw-meta{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-soft); margin-top:1px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .pw-cel{
+    padding:4px 6px; border-bottom:1px solid var(--card-border); border-left:1px solid var(--card-border);
+    display:flex; flex-wrap:wrap; align-content:center; gap:3px 4px; min-width:0;
+  }
+  .oneven{ background:rgba(62,61,68,0.022); }
+  body.nacht .oneven{ background:rgba(234,228,216,0.03); }
+  .pw-cel.vandaag{ background:rgba(188,23,2,0.05); }
+  .pw-kop.feest{ background:#4a4952; }
+  .pw-kop.feest .pw-dag, .pw-kop.feest .pw-datum{ color:#fff; }
+  .pw-cel.feest{ background:repeating-linear-gradient(135deg, rgba(74,73,82,0.08) 0 8px, transparent 8px 16px); }
+  .pw-nm{
+    font-size:14px; font-weight:600; white-space:nowrap; line-height:1.2;
+    background:var(--bg); border-radius:6px; padding:3px 7px;
+  }
+  .pw-cel.vandaag .pw-nm{ background:rgba(188,23,2,0.12); }
+
   /* ---------- ACTIEPUNTEN ---------- */
   .act-vak{ width:90vw; max-width:1400px; height:74vh; overflow:hidden; }
   .act-lijst{
@@ -767,7 +808,7 @@ function dagtipVanVandaag(){
     </div>
   </div>
   <div class="rotatie-slide" id="slide-planning">
-    <div class="bez-vak"><div class="bez-grid" id="plan-grid"></div></div>
+    <div class="pw-vak" id="plan-grid"></div>
   </div>
   <div class="rotatie-slide" id="slide-uren-nieuw">
     <div class="uren-vak"><div class="uren-grid kolommen-2" id="uren-grid-nieuw"></div></div>
@@ -1392,12 +1433,14 @@ function renderUren(){
 }
 
 /* ---------------- PLANNING ----------------
-   De planning van één dag, in dezelfde kaarten als "Wie werkt waar".
-   Van maandag tot zaterdagvoormiddag is dat vandaag; vanaf zaterdag
-   12u en op zondag al de volgende maandag. Verlof en ziekte uit Odoo
-   komen er vanzelf bij als kaart "Afwezig". */
+   Weekoverzicht in dezelfde opbouw als de planningstool: werven als
+   rijen, maandag tot zaterdag als kolommen, vandaag gemarkeerd.
+   Van maandag tot zaterdagvoormiddag de lopende week; vanaf zaterdag
+   12u en op zondag al de volgende week. Afwezigheden staan hier niet:
+   die staan al op de verlofpagina. */
 const PLAN_AFWEZIG = ['VERLOF', 'ZIEK', 'OPLEIDING'];
 const PLAN_INTERN  = ['MAGAZIJN', 'KANTOOR'];
+const PLAN_DAGEN   = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
 const ymdLokaal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
 function planningDag(){
@@ -1407,73 +1450,106 @@ function planningDag(){
   else if(d.getDay() === 6 && nu.getHours() >= 12) d.setDate(d.getDate() + 2);
   return d;
 }
+function isoWeekNr(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const n = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - n);
+  return Math.ceil(((t - new Date(Date.UTC(t.getUTCFullYear(), 0, 1))) / 864e5 + 1) / 7);
+}
+
+/* "Andrzej Nawrot" wordt "Andrzej N."; zo passen er twee naast
+   elkaar in een vak. Geeft dat twee keer hetzelfde, dan blijft
+   de volledige naam staan. */
+function korteNamen(namen){
+  const kort = n => {
+    const d = String(n).trim().split(/\s+/);
+    return d.length < 2 ? d[0] : d[0] + ' ' + d[d.length-1].charAt(0) + '.';
+  };
+  const teller = {};
+  namen.forEach(n => { const k = kort(n); teller[k] = (teller[k] || 0) + 1; });
+  const uit = {};
+  namen.forEach(n => { const k = kort(n); uit[n] = teller[k] > 1 ? n : k; });
+  return uit;
+}
 
 function renderPlanning(){
   const wrap = document.getElementById('plan-grid');
   if(!wrap) return;
-  const dag = planningDag();
-  const sleutel = ymdLokaal(dag);
-  const isVandaag = sleutel === ymdLokaal(new Date());
-  const dagTekst = dag.toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long' });
+  const focus = planningDag();
+  const maandag = new Date(focus); maandag.setDate(maandag.getDate() - ((maandag.getDay() + 6) % 7));
+  const dagen = PLAN_DAGEN.map((_, i) => { const d = new Date(maandag); d.setDate(d.getDate() + i); return d; });
+  const sleutels = dagen.map(ymdLokaal);
+  const vandaag = ymdLokaal(new Date());
+  const focusIdx = sleutels.indexOf(ymdLokaal(focus));
+
   const titel = document.getElementById('plan-titel');
-  if(titel) titel.textContent = isVandaag ? 'Planning vandaag' : 'Planning ' + dagTekst;
+  const lopend = sleutels.includes(vandaag);
+  if(titel) titel.textContent = (lopend ? 'Planning week ' : 'Planning volgende week · ') + isoWeekNr(maandag);
   const telling = document.getElementById('plan-telling');
 
-  const perWerf = {}, afwezig = {};
-  PLANNING.filter(p => p.datum === sleutel).forEach(p => {
-    if(PLAN_AFWEZIG.includes(p.code)){ afwezig[p.naam] = p.werf; return; }
+  const perWerf = {};
+  PLANNING.forEach(p => {
+    const d = sleutels.indexOf(p.datum);
+    if(d < 0 || PLAN_AFWEZIG.includes(p.code)) return;
     const intern = PLAN_INTERN.includes(p.code);
     const k = p.code || p.werf.toLowerCase();
     if(!perWerf[k]) perWerf[k] = {
       werf: p.werf, code: intern ? '' : p.code, stad: p.stad,
-      soort: intern ? 'intern' : 'werf', mensen: []
+      intern, dagen: PLAN_DAGEN.map(() => [])
     };
-    if(!perWerf[k].mensen.some(m => m.naam === p.naam)) perWerf[k].mensen.push({ naam: p.naam });
+    if(!perWerf[k].dagen[d].includes(p.naam)) perWerf[k].dagen[d].push(p.naam);
   });
 
-  const groepen = Object.values(perWerf).sort((a,b)=>{
-    if(a.soort !== b.soort) return a.soort === 'werf' ? -1 : 1;
-    return (b.mensen.length - a.mensen.length) || a.werf.localeCompare(b.werf);
+  const rijen = Object.values(perWerf).sort((a,b)=>{
+    if(a.intern !== b.intern) return a.intern ? 1 : -1;
+    const fa = focusIdx >= 0 ? a.dagen[focusIdx].length : 0;
+    const fb = focusIdx >= 0 ? b.dagen[focusIdx].length : 0;
+    const ta = a.dagen.reduce((n,x)=> n + x.length, 0), tb = b.dagen.reduce((n,x)=> n + x.length, 0);
+    return (fb - fa) || (tb - ta) || a.werf.localeCompare(b.werf);
   });
 
-  if(!groepen.length){
+  if(!rijen.length){
     if(telling) telling.textContent = '';
-    wrap.innerHTML = `<div class="bez-leeg">Nog geen planning voor ${isVandaag ? 'vandaag' : esc(dagTekst)}.</div>`;
+    wrap.innerHTML = `<div class="bez-leeg">Nog geen planning voor deze week.</div>`;
     return;
   }
 
-  VERLOF.forEach(v => {
-    if(v.van <= sleutel && v.tot >= sleutel && !afwezig[v.naam]){
-      afwezig[v.naam] = /^\[Z\]/i.test(v.soort) ? 'Ziek' : 'Verlof';
-    }
+  if(telling){
+    if(focusIdx >= 0){
+      const mensen = new Set(), werven = new Set();
+      rijen.forEach(r => r.dagen[focusIdx].forEach(n => { mensen.add(n); if(!r.intern) werven.add(r.werf); }));
+      const wie = sleutels[focusIdx] === vandaag ? 'vandaag' : PLAN_DAGEN[focusIdx].toLowerCase();
+      telling.textContent = `${wie} ${mensen.size} mensen op ${werven.size} ` + (werven.size === 1 ? 'werf' : 'werven');
+    } else telling.textContent = '';
+  }
+
+  const feest = new Set([...belgischeFeestdagen(dagen[0].getFullYear()), ...belgischeFeestdagen(dagen[5].getFullYear())]);
+  const isFeest = i => feest.has(sleutels[i]);
+
+  const alle = new Set();
+  rijen.forEach(r => r.dagen.forEach(x => x.forEach(n => alle.add(n))));
+  const kort = korteNamen([...alle]);
+
+  let h = `<div class="pw-kop pw-hoek"></div>`;
+  dagen.forEach((d, i) => {
+    const isVandaag = sleutels[i] === vandaag;
+    h += `<div class="pw-kop ${isVandaag ? 'vandaag' : ''} ${isFeest(i) ? 'feest' : ''}">
+      <span class="pw-dag">${PLAN_DAGEN[i]}</span>
+      <span class="pw-datum">${d.getDate()}/${d.getMonth()+1}${isFeest(i) ? ' · feestdag' : isVandaag ? ' · vandaag' : ''}</span></div>`;
   });
-  const afwNamen = Object.keys(afwezig).sort((a,b)=> a.localeCompare(b));
-  if(afwNamen.length) groepen.push({
-    werf: 'Afwezig', code: '', stad: '', soort: 'onderweg',
-    mensen: afwNamen.map(n => ({ naam: n, extra: afwezig[n] }))
+  rijen.forEach((r, ri) => {
+    const meta = [r.code, r.stad].filter(Boolean).join(' · ');
+    const streep = ri % 2 ? ' oneven' : '';
+    h += `<div class="pw-werf${r.intern ? ' intern' : ''}${streep}">
+      <div class="pw-wnaam">${esc(r.werf)}</div>${meta ? `<div class="pw-meta">${esc(meta)}</div>` : ''}</div>`;
+    r.dagen.forEach((namen, i) => {
+      namen.sort((a,b)=> a.localeCompare(b));
+      h += `<div class="pw-cel${sleutels[i] === vandaag ? ' vandaag' : ''}${isFeest(i) ? ' feest' : ''}${streep}">` +
+        namen.map(n => `<span class="pw-nm" title="${esc(n)}">${esc(kort[n])}</span>`).join('') + `</div>`;
+    });
   });
 
-  const mensen = groepen.filter(g => g.soort !== 'onderweg').reduce((n,g)=> n + g.mensen.length, 0);
-  const werven = groepen.filter(g => g.soort === 'werf').length;
-  if(telling) telling.textContent = `${mensen} mensen · ${werven} ` + (werven === 1 ? 'werf' : 'werven')
-                                  + (afwNamen.length ? ` · ${afwNamen.length} afwezig` : '');
-
-  wrap.innerHTML = groepen.map(g => {
-    g.mensen.sort((a,b)=> a.naam.localeCompare(b.naam));
-    const meta = [g.code, g.stad].filter(Boolean).join(' · ');
-    return `<div class="bez-kaart ${esc(g.soort)}">
-      <div class="bez-kop">
-        <div class="bez-werf">${esc(g.werf)}</div>
-        <div class="bez-aantal">${g.mensen.length}</div>
-      </div>
-      ${meta ? `<div class="bez-meta">${esc(meta)}</div>` : ''}
-      <div class="bez-mensen ${g.mensen.length > 5 ? 'dubbel' : ''}">
-        ${g.mensen.map(p => `<div class="bez-persoon"><span class="nm">${esc(p.naam)}</span>${p.extra ? `<span class="extra">${esc(p.extra)}</span>` : ''}</div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-
-  pasPassend(wrap, wrap.parentElement);
+  wrap.innerHTML = `<div class="pw-tabel">${h}</div>`;
+  pasPassend(wrap.firstElementChild, wrap);
 }
 
 /* ---------------- ACTIEPUNTEN ----------------
@@ -1907,7 +1983,9 @@ window.addEventListener('resize', ()=>{
 });
 
 /* ---------------- ROTATIE ---------------- */
-const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'planning', 'uren-nieuw', 'uren-lopend', 'verlof', 'acties', 'dagtip'];
+/* Actiepunten staan bewust niet in de rotatie: die zijn intern voor
+   de planningsmeeting en staan enkel in planning.html. */
+const rotatieFases = ['dashboard', 'bezetting', 'kaart', 'planning', 'uren-nieuw', 'uren-lopend', 'verlof', 'dagtip'];
 let rotatieIndex = 0;
 let rotatieTimer = null;
 
