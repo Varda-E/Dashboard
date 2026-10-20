@@ -334,8 +334,48 @@ let vorige = [];
 let ploeg = [], werven = [], verlof = [];
 let acties = [], actiesVersie = "";
 let planVuil = false, actiesVuil = false;
-let geladen = false, bezig = false;
+let geladen = false;
 let undo = [];
+let vers = false;              // true zodra de nieuwste versie van Google binnen is
+let basisAanwezig = false;     // ploeg, werven en verlof zijn er (eventueel uit het geheugen)
+let laadBezig = false, opslaanBezig = false;
+let verzoekNr = 0;
+let weekCache = {};            // per maandag: { planning, vorige, versie }
+let wijzigTeller = 0, actTeller = 0;
+
+/* ---------- geheugen op dit toestel ----------
+   Bij het openen staat meteen de laatst geziene versie op het scherm,
+   terwijl op de achtergrond de nieuwste wordt opgehaald. Bewerken kan
+   pas als die binnen is, zodat niemand op een oude versie verder werkt. */
+const CACHE_SLEUTEL = "varda-planning-cache";
+function bewaarCache(){
+  try{
+    const w = {};
+    Object.keys(weekCache).sort().slice(-8).forEach(k=> w[k] = weekCache[k]);
+    weekCache = w;
+    localStorage.setItem(CACHE_SLEUTEL, JSON.stringify({ basis:{ ploeg, werven, verlof }, acties, actiesVersie, weken:w }));
+  }catch(e){}
+}
+function leesCache(){
+  try{
+    const c = JSON.parse(localStorage.getItem(CACHE_SLEUTEL) || "null");
+    if(!c || !c.basis) return;
+    ploeg = c.basis.ploeg || []; werven = c.basis.werven || []; verlof = c.basis.verlof || [];
+    acties = c.acties || []; actiesVersie = c.actiesVersie || "";
+    weekCache = c.weken || {}; basisAanwezig = true;
+  }catch(e){}
+}
+function wisCache(){
+  try{ localStorage.removeItem(CACHE_SLEUTEL); }catch(e){}
+  weekCache = {}; basisAanwezig = false; geladen = false; vers = false;
+  ploeg = []; werven = []; verlof = []; acties = []; rijen = [];
+  planEl.innerHTML = "";
+}
+function magBewerken(){
+  if(vers) return true;
+  toast(laadBezig ? "Even geduld — de nieuwste versie wordt opgehaald" : "Geen verbinding met de planning — herlaad de pagina", false);
+  return false;
+}
 
 const rijId = (code, werf) => code ? code : "N:" + String(werf).trim().toLowerCase();
 const soortVan = code => CODES_AFWEZIG.includes(code) ? "afwezig" : CODES_INTERN.includes(code) ? "intern" : "werf";
@@ -383,34 +423,68 @@ async function api(methode, gegevens){
   } finally { clearTimeout(t); }
 }
 
-async function laad(){
+/* De week op het scherm zetten uit het geheugen (of leeg). */
+function toonWeek(){
+  const c = weekCache[ymd(week)];
+  versie = c ? (c.versie || "") : "";
+  vorige = c ? (c.vorige || []) : [];
+  rijen = bouwRijen(c ? (c.planning || []) : [], week, true);
+  zorgVoorAfwezig();
+}
+
+async function laad(volledig){
   if(/PLAK_HIER/.test(SCRIPT_URL)){
     toonPin("De webapp-URL is nog niet ingevuld bovenaan planning.html.", true); return;
   }
   if(!pin){ toonPin(); return; }
-  bezig = true; zetStatus();
+  const sleutel = ymd(week);
+  const mijn = ++verzoekNr;
+
+  /* Meteen tonen wat we al hebben; de nieuwste versie volgt. */
+  if(!planVuil){ toonWeek(); if(basisAanwezig){ geladen = true; vulLijsten(); } }
+  vers = false; laadBezig = true;
+  render(); zetStatus();
+
   try{
-    const r = await api("GET", { pin, week: ymd(week) });
+    const vraag = { pin, week: sleutel };
+    if(!volledig && basisAanwezig) vraag.deel = "week";
+    const r = await api("GET", vraag);
+    if(mijn !== verzoekNr) return;          // intussen naar een andere week gegaan
     if(!r.ok){
-      if(r.fout==="pin"){ bewaarPin(""); toonPin("Pincode klopt niet."); return; }
+      if(r.fout==="pin"){ bewaarPin(""); wisCache(); toonPin("Pincode klopt niet."); return; }
       throw new Error(r.fout || "onbekende fout");
     }
     verbergPin();
-    versie = r.versie || "";
-    vorige = r.vorige || [];
-    ploeg = r.ploeg || [];
-    werven = r.werven || [];
-    verlof = r.verlof || [];
-    if(!actiesVuil){ acties = r.acties || []; actiesVersie = r.actiesVersie || ""; }
-    rijen = bouwRijen(r.planning || [], week, true);
-    zorgVoorAfwezig();
-    planVuil = false; undo = []; geladen = true;
+    if(r.ploeg){
+      ploeg = r.ploeg || []; werven = r.werven || []; verlof = r.verlof || [];
+      basisAanwezig = true;
+    }
+    if(r.acties && !actiesVuil){ acties = r.acties; actiesVersie = r.actiesVersie || ""; }
+    weekCache[sleutel] = { planning: r.planning || [], vorige: r.vorige || [], versie: r.versie || "" };
+    if(!planVuil){ toonWeek(); undo = []; document.getElementById("undoBtn").disabled = true; }
+    geladen = true; vers = true;
     vulLijsten();
+    bewaarCache();
     render();
+    voorladen(sleutel);
   }catch(e){
-    toast("Laden mislukt: " + e.message, false, true);
+    if(mijn === verzoekNr) toast("Laden mislukt: " + e.message, false, true);
   }finally{
-    bezig = false; zetStatus();
+    if(mijn === verzoekNr){ laadBezig = false; zetStatus(); }
+  }
+}
+
+/* De week ervoor en erna alvast ophalen, zodat bladeren direct gaat. */
+async function voorladen(sleutel){
+  for(const n of [7, -7]){
+    const k = ymd(plusDagen(vanYmd(sleutel), n));
+    try{
+      const r = await api("GET", { pin, week: k, deel: "week" });
+      if(r.ok && !(planVuil && ymd(week)===k)){
+        weekCache[k] = { planning: r.planning || [], vorige: r.vorige || [], versie: r.versie || "" };
+        bewaarCache();
+      }
+    }catch(e){}
   }
 }
 
@@ -421,12 +495,20 @@ function plat(){
   return uit;
 }
 
+/* Opslaan gebeurt op de achtergrond: je kan intussen verder plannen.
+   Wat je tijdens het opslaan nog verandert, blijft als "niet
+   opgeslagen" staan tot de volgende keer. */
 async function opslaan(forceer){
-  if(bezig || (!planVuil && !actiesVuil)) return;
+  if(opslaanBezig || (!planVuil && !actiesVuil)) return;
+  if(!magBewerken()) return;
+  const sleutel = ymd(week);
   const bericht = { pin, forceer: !!forceer };
-  if(planVuil)   bericht.planning = { week: ymd(week), versie, rijen: plat() };
-  if(actiesVuil) bericht.acties = { versie: actiesVersie, lijst: acties };
-  bezig = true; zetStatus();
+  const metPlan = planVuil, metActies = actiesVuil;
+  const tPlan = wijzigTeller, tAct = actTeller;
+  const verzonden = metPlan ? plat() : null;
+  if(metPlan)   bericht.planning = { week: sleutel, versie, rijen: verzonden };
+  if(metActies) bericht.acties = { versie: actiesVersie, lijst: acties };
+  opslaanBezig = true; zetStatus();
   try{
     const r = await api("POST", bericht);
     if(!r.ok){
@@ -435,17 +517,20 @@ async function opslaan(forceer){
       if(r.fout==="bezet") throw new Error("iemand anders is net aan het opslaan, probeer opnieuw");
       throw new Error(r.detail || r.fout || "onbekende fout");
     }
-    if(r.versie) versie = r.versie;
-    if(r.actiesVersie) actiesVersie = r.actiesVersie;
+    if(metPlan && r.versie){
+      weekCache[sleutel] = { planning: verzonden, vorige: weekCache[sleutel] ? weekCache[sleutel].vorige : vorige, versie: r.versie };
+      if(ymd(week) === sleutel){ versie = r.versie; if(wijzigTeller === tPlan) planVuil = false; }
+    }
+    if(metActies && r.actiesVersie){ actiesVersie = r.actiesVersie; if(actTeller === tAct) actiesVuil = false; }
+    bewaarCache();
     const delen = [];
-    if(planVuil) delen.push((r.regels||0) + " planningsregels");
-    if(actiesVuil) delen.push((r.acties||0) + " actiepunten");
-    planVuil = false; actiesVuil = false;
+    if(metPlan) delen.push((r.regels||0) + " planningsregels");
+    if(metActies) delen.push((r.acties||0) + " actiepunten");
     toast("Opgeslagen · " + delen.join(" · "), false);
   }catch(e){
     toast("Opslaan mislukt: " + e.message, false, true);
   }finally{
-    bezig = false; zetStatus();
+    opslaanBezig = false; zetStatus();
   }
 }
 
@@ -453,11 +538,12 @@ function zetStatus(){
   const s = document.getElementById("status");
   const knop = document.getElementById("saveBtn");
   const vuil = planVuil || actiesVuil;
-  if(bezig){ s.className="status bezig"; s.textContent = geladen ? "Bezig…" : "Laden…"; }
+  if(opslaanBezig){ s.className="status bezig"; s.textContent="Opslaan…"; }
   else if(vuil){ s.className="status vuil"; s.textContent="● Niet opgeslagen"; }
-  else if(geladen){ s.className="status ok"; s.textContent="✓ Opgeslagen"; }
+  else if(laadBezig){ s.className="status bezig"; s.textContent = geladen ? "Bijwerken…" : "Laden…"; }
+  else if(geladen && vers){ s.className="status ok"; s.textContent="✓ Opgeslagen"; }
   else { s.className="status bezig"; s.textContent="Niet verbonden"; }
-  knop.disabled = bezig || !vuil;
+  knop.disabled = opslaanBezig || !vuil || !vers;
   const open = acties.filter(a=>a.status!=="klaar").length;
   document.getElementById("actCount").textContent = open ? open + " open" : "";
 }
@@ -618,13 +704,14 @@ function doUndo(){
   document.getElementById("undoBtn").disabled = !undo.length;
   hideToast(); render();
 }
-function gewijzigd(){ planVuil = true; render(); }
+function gewijzigd(){ planVuil = true; wijzigTeller++; render(); }
 
 const rijMet = id => rijen.find(r=>r.id===id);
 
 /* Eén of meerdere namen tegelijk verplaatsen (of kopiëren).
    items = [{naam, van:{site,day} | null}] */
 function verplaats(items, naarId, dagen, kopie){
+  if(!magBewerken()) return [];
   const doel = rijMet(naarId); if(!doel || !items.length) return [];
   snap();
   if(!kopie) items.forEach(it=>{
@@ -639,6 +726,7 @@ function verplaats(items, naarId, dagen, kopie){
   return namen;
 }
 function haalWeg(items){
+  if(!magBewerken()) return;
   items = items.filter(it=>it.van); if(!items.length) return;
   snap();
   items.forEach(it=>{ const a = rijMet(it.van.site)?.dagen[it.van.day]; const i = a ? a.indexOf(it.naam) : -1; if(i>-1) a.splice(i,1); });
@@ -651,6 +739,7 @@ const telNamen = namen => namen.length===1 ? namen[0] : namen.length + " mensen"
 /* Werf toevoegen: herkent een bestaande werf uit de lijst, of
    maakt een nieuwe. "S26/01300 - Naam" wordt gesplitst in code en naam. */
 function voegWerfToe(tekst){
+  if(!magBewerken()) return;
   tekst = String(tekst||"").trim(); if(!tekst) return;
   const optie = w => (w.code ? `${w.code} - ${w.naam}` : w.naam).toLowerCase();
   const t = tekst.toLowerCase();
@@ -672,6 +761,7 @@ function voegWerfToe(tekst){
 }
 
 function verwijderWerf(id){
+  if(!magBewerken()) return;
   const r = rijMet(id); if(!r) return;
   snap(); rijen = rijen.filter(x=>x!==r);
   gewijzigd(); toast(`${r.werf} uit deze week gehaald`);
@@ -770,9 +860,10 @@ document.addEventListener("submit", e=>{
    KNOPPEN
    ============================================================ */
 function wisselWeek(n){
+  if(opslaanBezig){ toast("Even wachten tot het opslaan klaar is", false); return; }
   if(planVuil && !confirm("Je hebt niet-opgeslagen wijzigingen in deze week. Toch van week wisselen? (De wijzigingen gaan verloren.)")) return;
   week = plusDagen(week, n*7); planVuil = false; selectie = [];
-  render(); laad();
+  laad(false);
 }
 document.getElementById("prevWk").onclick = ()=> wisselWeek(-1);
 document.getElementById("nextWk").onclick = ()=> wisselWeek(1);
@@ -781,6 +872,7 @@ document.getElementById("saveBtn").onclick = ()=> opslaan(false);
 document.getElementById("search").oninput = ()=> renderPool();
 
 document.getElementById("copyPrev").onclick = ()=>{
+  if(!magBewerken()) return;
   const lijst = bouwRijen(vorige, plusDagen(week,-7), false);
   if(!lijst.length){ toast("Vorige week heeft nog geen opgeslagen planning", false); return; }
   const heeftIets = rijen.some(r=>soortVan(r.code)!=="afwezig" && r.dagen.some(a=>a.length));
@@ -792,6 +884,7 @@ document.getElementById("copyPrev").onclick = ()=>{
   toast("Planning van vorige week overgenomen (zonder afwezigheden)");
 };
 document.getElementById("clearWk").onclick = ()=>{
+  if(!magBewerken()) return;
   if(!confirm("Alle planning van deze week wissen?")) return;
   snap(); rijen = []; zorgVoorAfwezig(); gewijzigd(); toast("Week leeggemaakt");
 };
@@ -837,27 +930,30 @@ function vulWerfKeuze(){
 document.getElementById("actForm").addEventListener("submit", e=>{
   e.preventDefault();
   const wat = document.getElementById("actWat").value.trim(); if(!wat) return;
+  if(!magBewerken()) return;
   snap();
   acties.push({ id: "A" + Date.now().toString(36) + Math.floor(Math.random()*1000),
     wat, werf: document.getElementById("actWerf").value, wie: document.getElementById("actWie").value.trim(),
     deadline: document.getElementById("actDl").value || "",
     status: "open", aangemaakt: ymd(new Date()), afgerond: "" });
-  actiesVuil = true;
+  actiesVuil = true; actTeller++;
   e.target.reset(); document.getElementById("actWat").focus();
   renderActies(); zetStatus();
 });
 document.getElementById("actLijst").addEventListener("change", e=>{
   const id = e.target.dataset.vink; if(!id) return;
   const a = acties.find(x=>x.id===id); if(!a) return;
+  if(!magBewerken()){ renderActies(); return; }
   snap();
   a.status = e.target.checked ? "klaar" : "open";
   a.afgerond = e.target.checked ? ymd(new Date()) : "";
-  actiesVuil = true; renderActies(); zetStatus();
+  actiesVuil = true; actTeller++; renderActies(); zetStatus();
 });
 document.getElementById("actLijst").addEventListener("click", e=>{
   const id = e.target.dataset.actrm; if(!id) return;
   const a = acties.find(x=>x.id===id); if(!a) return;
-  snap(); acties = acties.filter(x=>x!==a); actiesVuil = true;
+  if(!magBewerken()) return;
+  snap(); acties = acties.filter(x=>x!==a); actiesVuil = true; actTeller++;
   renderActies(); zetStatus(); toast("Actiepunt verwijderd");
 });
 
@@ -878,7 +974,7 @@ document.getElementById("pinForm").addEventListener("submit", e=>{
   const p = document.getElementById("pinInput").value.trim(); if(!p) return;
   bewaarPin(p); document.getElementById("pinInput").value = "";
   document.getElementById("pinFout").hidden = true;
-  laad();
+  laad(true);
 });
 
 function toonConflict(wat){
@@ -889,7 +985,7 @@ function toonConflict(wat){
 }
 document.getElementById("conflictHerlaad").onclick = ()=>{
   document.getElementById("conflictScherm").hidden = true;
-  planVuil = false; actiesVuil = false; laad();
+  planVuil = false; actiesVuil = false; delete weekCache[ymd(week)]; laad(true);
 };
 document.getElementById("conflictForceer").onclick = ()=>{
   document.getElementById("conflictScherm").hidden = true; opslaan(true);
@@ -906,8 +1002,9 @@ function toast(m, metUndo=true, fout=false){
 function hideToast(){ document.getElementById("toast").hidden = true; }
 document.getElementById("toastUndo").onclick = doUndo;
 
+leesCache();
 render();
-laad();
+laad(true);
 </script>
 </body>
 </html>
