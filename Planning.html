@@ -59,9 +59,6 @@ button:focus-visible,.chip:focus-visible,input:focus-visible{outline:2px solid v
 .status.bezig{background:var(--surface-2);color:var(--muted)}
 
 /* ---------- tabs ---------- */
-.tabs{display:flex;gap:6px;margin-bottom:14px}
-.tabs button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 16px;font-weight:600;font-size:13px}
-.tabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .hint{color:var(--muted);font-size:12.5px}
@@ -131,11 +128,18 @@ tr.absent .chip::before{background:var(--steel)}
 .legend b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 
 /* ---------- actiepunten ---------- */
-.acties{max-width:1100px}
-.act-form{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:14px}
-.act-form input{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:8px 10px;font-size:13.5px}
-.act-form #actWat{flex:1;min-width:260px}
-.act-form #actWie{width:200px}
+.acties{margin-top:26px}
+.act-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.act-head h3{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.act-count{font-size:12px;font-weight:600;color:var(--red);background:var(--red-soft);padding:2px 9px;border-radius:99px}
+.act-count:empty{display:none}
+.act-form{display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r) var(--r) 0 0;border-bottom:0;padding:12px}
+.act-form input,.act-form select{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:8px 10px;font-size:13.5px;font-family:inherit;color:var(--ink)}
+.act-form #actWat{flex:1;min-width:240px}
+.act-form #actWerf{width:240px}
+.act-form #actWie{width:180px}
+.act-lijst{border-radius:0 0 var(--r) var(--r)!important}
+.act-werf{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);font-weight:400;margin-top:2px}
 .act-lijst{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .act-rij{display:grid;grid-template-columns:34px minmax(0,1fr) 190px 130px 30px;gap:12px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line)}
 .act-rij:last-child{border-bottom:0}
@@ -160,6 +164,8 @@ tr.absent .chip::before{background:var(--steel)}
 .dialog .fout{color:var(--red);font-size:13px;margin:-4px 0 12px;font-weight:600}
 .dialog .knoppen{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 
+.selbar{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);background:var(--red);color:#fff;padding:9px 14px 9px 16px;border-radius:99px;font-size:13px;font-weight:600;display:flex;gap:14px;align-items:center;z-index:65;box-shadow:0 6px 20px rgba(188,23,2,.3)}
+.selbar button{background:rgba(255,255,255,.18);border:0;color:#fff;font-weight:600;border-radius:99px;padding:4px 11px;font-size:12px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;display:flex;gap:12px;align-items:center;z-index:70;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100vw - 32px)}
 .toast button{background:none;border:0;color:#fff;font-weight:700;text-decoration:underline;padding:0}
 .toast.fout{background:var(--red)}
@@ -187,18 +193,13 @@ tr.absent .chip::before{background:var(--steel)}
   <button class="btn primary" id="saveBtn" disabled>Opslaan</button>
 </header>
 
-<div class="tabs">
-  <button class="on" data-tab="planning">Planning</button>
-  <button data-tab="acties" id="tabActies">Actiepunten</button>
-</div>
-
 <!-- ======================= PLANNING ======================= -->
 <section id="viewPlanning">
   <div class="toolbar">
     <button class="btn" id="copyPrev">Kopieer vorige week</button>
     <button class="btn" id="undoBtn" disabled>Ongedaan maken</button>
     <button class="btn" id="clearWk">Week leegmaken</button>
-    <span class="hint">Sleep een naam naar een dag. Sleep naar een werfnaam = hele week. Ctrl/⌥ ingedrukt = kopiëren. Dubbelklik = verwijderen. Tablet: tik naam, tik vak.</span>
+    <span class="hint">Sleep een naam naar een dag, of naar een werfnaam voor de hele week. Klik meerdere namen aan om ze samen te verslepen of in één keer in een vak te zetten. Ctrl/⌥ = kopiëren. Dubbelklik = verwijderen.</span>
   </div>
   <div class="layout">
     <div style="min-width:0">
@@ -209,6 +210,20 @@ tr.absent .chip::before{background:var(--steel)}
         <span><b style="background:var(--steel)"></b>afwezig</span>
         <span><b style="background:var(--line)"></b>nog niet ingepland</span>
       </div>
+
+      <!-- ============ ACTIEPUNTEN ============ -->
+      <div class="acties" id="acties">
+        <div class="act-head"><h3>Actiepunten</h3><span class="act-count" id="actCount"></span></div>
+        <form class="act-form" id="actForm">
+          <input id="actWat" placeholder="Wat moet er gebeuren? bv. 1-XKN-691 naar keuring" autocomplete="off">
+          <select id="actWerf" aria-label="Werf"></select>
+          <input id="actWie" placeholder="Wie" list="ploegLijst" autocomplete="off">
+          <input id="actDl" type="date" aria-label="Deadline" title="Tegen wanneer">
+          <button class="btn primary">Toevoegen</button>
+        </form>
+        <div class="act-lijst" id="actLijst"></div>
+        <p class="hint" style="margin-top:8px">Eén doorlopende lijst, los van de week. Afgevinkte punten blijven 7 dagen zichtbaar op het dashboard. Vergeet niet op <b>Opslaan</b> te klikken.</p>
+      </div>
     </div>
     <aside class="pool" id="pool">
       <h3>Ploeg</h3>
@@ -217,18 +232,6 @@ tr.absent .chip::before{background:var(--steel)}
       <div class="list" id="poolList"></div>
     </aside>
   </div>
-</section>
-
-<!-- ======================= ACTIEPUNTEN ======================= -->
-<section id="viewActies" class="acties" hidden>
-  <form class="act-form" id="actForm">
-    <input id="actWat" placeholder="Wat moet er gebeuren?" autocomplete="off">
-    <input id="actWie" placeholder="Wie" list="ploegLijst" autocomplete="off">
-    <input id="actDl" type="date" aria-label="Deadline">
-    <button class="btn primary">Toevoegen</button>
-  </form>
-  <div class="act-lijst" id="actLijst"></div>
-  <p class="hint" style="margin-top:10px">Afgevinkte punten blijven 7 dagen zichtbaar op het dashboard en verdwijnen daarna vanzelf. Vergeet niet op <b>Opslaan</b> te klikken.</p>
 </section>
 
 <datalist id="wervenLijst"></datalist>
@@ -257,6 +260,7 @@ tr.absent .chip::before{background:var(--steel)}
   </div>
 </div>
 
+<div class="selbar" id="selbar" hidden><span id="selTekst"></span><button id="selWis">Annuleren</button></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo">Ongedaan maken</button></div>
 
 <script>
@@ -310,7 +314,6 @@ let acties = [], actiesVersie = "";
 let planVuil = false, actiesVuil = false;
 let geladen = false, bezig = false;
 let undo = [];
-let tab = "planning";
 
 const rijId = (code, werf) => code ? code : "N:" + String(werf).trim().toLowerCase();
 const soortVan = code => CODES_AFWEZIG.includes(code) ? "afwezig" : CODES_INTERN.includes(code) ? "intern" : "werf";
@@ -434,7 +437,7 @@ function zetStatus(){
   else { s.className="status bezig"; s.textContent="Niet verbonden"; }
   knop.disabled = bezig || !vuil;
   const open = acties.filter(a=>a.status!=="klaar").length;
-  document.getElementById("tabActies").textContent = "Actiepunten" + (open ? " · " + open + " open" : "");
+  document.getElementById("actCount").textContent = open ? open + " open" : "";
 }
 window.addEventListener("beforeunload", e=>{ if(planVuil||actiesVuil){ e.preventDefault(); e.returnValue=""; } });
 
@@ -540,6 +543,7 @@ function render(){
   renderPool(lasten, vrijaf);
   renderActies();
   zetStatus();
+  toonSelectie();
 }
 
 function renderPool(lasten, vrijaf){
@@ -563,6 +567,7 @@ function renderPool(lasten, vrijaf){
   if(vol.length)  h += `<div class="sect">Volledig ingepland · ${vol.length}</div>` + vol.map(item).join("");
   if(!ploeg.length && !q) h = `<div class="hint">De ploeglijst is leeg. Draai <b>haalPloeg</b> in Apps Script of vul het tabblad Ploeg aan.</div>` + h;
   document.getElementById("poolList").innerHTML = h || `<div class="hint">Niemand gevonden.</div>`;
+  if(typeof toonSelectie === "function" && typeof selectie !== "undefined") toonSelectie();
 }
 
 function vulLijsten(){
@@ -591,18 +596,31 @@ function gewijzigd(){ planVuil = true; render(); }
 
 const rijMet = id => rijen.find(r=>r.id===id);
 
-function plaats(naam, van, naarId, dagen, kopie){
-  const doel = rijMet(naarId); if(!doel) return;
+/* Eén of meerdere namen tegelijk verplaatsen (of kopiëren).
+   items = [{naam, van:{site,day} | null}] */
+function verplaats(items, naarId, dagen, kopie){
+  const doel = rijMet(naarId); if(!doel || !items.length) return [];
   snap();
-  if(van && !kopie){ const a = rijMet(van.site)?.dagen[van.day]; const i = a ? a.indexOf(naam) : -1; if(i>-1) a.splice(i,1); }
-  dagen.forEach(d=>{ if(!doel.dagen[d].includes(naam)) doel.dagen[d].push(naam); });
+  if(!kopie) items.forEach(it=>{
+    if(!it.van) return;
+    const a = rijMet(it.van.site)?.dagen[it.van.day]; const i = a ? a.indexOf(it.naam) : -1;
+    if(i>-1) a.splice(i,1);
+  });
+  const namen = [...new Set(items.map(it=>it.naam))];
+  dagen.forEach(d=> namen.forEach(n=>{ if(!doel.dagen[d].includes(n)) doel.dagen[d].push(n); }));
+  wisSelectie(false);
   gewijzigd();
+  return namen;
 }
-function haalWeg(naam, van){
-  const a = rijMet(van.site)?.dagen[van.day]; if(!a) return;
-  snap(); const i = a.indexOf(naam); if(i>-1) a.splice(i,1);
-  gewijzigd(); toast(`${naam} uit planning gehaald`);
+function haalWeg(items){
+  items = items.filter(it=>it.van); if(!items.length) return;
+  snap();
+  items.forEach(it=>{ const a = rijMet(it.van.site)?.dagen[it.van.day]; const i = a ? a.indexOf(it.naam) : -1; if(i>-1) a.splice(i,1); });
+  wisSelectie(false);
+  gewijzigd();
+  toast(items.length===1 ? `${items[0].naam} uit planning gehaald` : `${items.length} namen uit planning gehaald`);
 }
+const telNamen = namen => namen.length===1 ? namen[0] : namen.length + " mensen";
 
 /* Werf toevoegen: herkent een bestaande werf uit de lijst, of
    maakt een nieuwe. "S26/01300 - Naam" wordt gesplitst in code en naam. */
@@ -636,12 +654,39 @@ function verwijderWerf(id){
 /* ============================================================
    SLEPEN, TIKKEN, KLIKKEN
    ============================================================ */
-let sleep = null, gekozen = null;
+/* Selectie: klik namen aan (uit de ploeg of uit het rooster) en
+   sleep ze samen, of klik daarna een vak of werfnaam aan. */
+let sleep = null;
+let selectie = [];
+const itemVan = c => ({ naam: c.dataset.name, van: c.dataset.site ? { site: c.dataset.site, day: +c.dataset.day } : null });
+const sleutelVan = it => it.naam + "|" + (it.van ? it.van.site + "|" + it.van.day : "ploeg");
+
+function toonSelectie(){
+  const keys = new Set(selectie.map(sleutelVan));
+  document.querySelectorAll(".chip:not(.vast)").forEach(c=> c.classList.toggle("sel", keys.has(sleutelVan(itemVan(c)))));
+  document.querySelectorAll("td.cell[data-site]").forEach(x=> x.classList.toggle("target", selectie.length>0));
+  const bar = document.getElementById("selbar");
+  bar.hidden = !selectie.length;
+  if(selectie.length){
+    const namen = [...new Set(selectie.map(i=>i.naam))];
+    document.getElementById("selTekst").textContent =
+      (namen.length===1 ? namen[0] : namen.length + " namen") + " geselecteerd — klik een vak of werfnaam, of sleep";
+  }
+}
+function wisSelectie(tekenen=true){ selectie = []; if(tekenen) toonSelectie(); }
+document.getElementById("selWis").onclick = ()=> wisSelectie();
+
 document.addEventListener("dragstart", e=>{
   const c = e.target.closest(".chip"); if(!c || c.classList.contains("vast")) { if(c) e.preventDefault(); return; }
-  sleep = { naam: c.dataset.name, van: c.dataset.site ? { site: c.dataset.site, day: +c.dataset.day } : null };
-  c.classList.add("dragging"); e.dataTransfer.effectAllowed = "copyMove";
-  try{ e.dataTransfer.setData("text/plain", sleep.naam); }catch(_){}
+  const it = itemVan(c);
+  const inSel = selectie.some(x=>sleutelVan(x)===sleutelVan(it));
+  /* Sleep je een aangeklikte naam, dan gaat de hele selectie mee. */
+  const items = inSel && selectie.length>1 ? selectie.slice() : [it];
+  sleep = { items };
+  const keys = new Set(items.map(sleutelVan));
+  document.querySelectorAll(".chip:not(.vast)").forEach(x=>{ if(keys.has(sleutelVan(itemVan(x)))) x.classList.add("dragging"); });
+  e.dataTransfer.effectAllowed = "copyMove";
+  try{ e.dataTransfer.setData("text/plain", items.map(i=>i.naam).join(", ")); }catch(_){}
 });
 document.addEventListener("dragend", ()=>{ document.querySelectorAll(".dragging,.drop").forEach(x=>x.classList.remove("dragging","drop")); sleep = null; });
 const doelVan = el => el.closest("td.cell[data-site], td.site[data-site], #pool");
@@ -649,47 +694,47 @@ document.addEventListener("dragover", e=>{
   if(!sleep) return;
   const t = doelVan(e.target);
   document.querySelectorAll(".drop").forEach(x=> x!==t && x.classList.remove("drop"));
-  if(t){ e.preventDefault(); t.classList.add("drop"); e.dataTransfer.dropEffect = (e.ctrlKey||e.altKey||!sleep.van) ? "copy" : "move"; }
+  if(t){ e.preventDefault(); t.classList.add("drop"); e.dataTransfer.dropEffect = (e.ctrlKey||e.altKey||sleep.items.every(i=>!i.van)) ? "copy" : "move"; }
 });
+function zetOp(items, t, kopie){
+  if(t.classList.contains("site")){
+    const namen = verplaats(items, t.dataset.site, [...Array(N).keys()], kopie);
+    if(namen.length) toast(`${telNamen(namen)} hele week op ${rijMet(t.dataset.site)?.werf || ""}`);
+  } else verplaats(items, t.dataset.site, [+t.dataset.day], kopie);
+}
 document.addEventListener("drop", e=>{
   if(!sleep) return;
   const t = doelVan(e.target); if(!t) return;
   e.preventDefault();
-  const kopie = e.ctrlKey || e.altKey || e.metaKey;
-  if(t.id==="pool"){ if(sleep.van) haalWeg(sleep.naam, sleep.van); return; }
-  if(t.classList.contains("site")){
-    plaats(sleep.naam, sleep.van, t.dataset.site, [...Array(N).keys()], kopie);
-    toast(`${sleep.naam} hele week op ${rijMet(t.dataset.site)?.werf || ""}`);
-  } else plaats(sleep.naam, sleep.van, t.dataset.site, [+t.dataset.day], kopie);
+  if(t.id==="pool") haalWeg(sleep.items);
+  else zetOp(sleep.items, t, e.ctrlKey || e.altKey || e.metaKey);
 });
 document.addEventListener("dblclick", e=>{
   const c = e.target.closest("td .chip:not(.vast)");
-  if(c) haalWeg(c.dataset.name, { site: c.dataset.site, day: +c.dataset.day });
+  if(c) haalWeg([itemVan(c)]);
 });
-/* Tablet: tik een naam, tik daarna een vak. */
 document.addEventListener("click", e=>{
   const rm = e.target.closest("[data-rm]");
   if(rm){ verwijderWerf(rm.dataset.rm); return; }
-  if(e.target.closest("#viewActies, .overlay, header, .tabs, .toolbar, .toast, form")) return;
+  if(e.target.closest("#acties, .overlay, header, .toolbar, .toast, .selbar, form")) return;
   const c = e.target.closest(".chip:not(.vast)");
   if(c){
-    gekozen = { naam: c.dataset.name, van: c.dataset.site ? { site: c.dataset.site, day: +c.dataset.day } : null };
-    document.querySelectorAll(".chip.sel").forEach(x=>x.classList.remove("sel")); c.classList.add("sel");
-    document.querySelectorAll("td.cell[data-site]").forEach(x=>x.classList.add("target"));
+    /* Aanklikken = toevoegen aan de selectie; nog eens klikken = eruit. */
+    const it = itemVan(c), k = sleutelVan(it);
+    selectie = selectie.some(x=>sleutelVan(x)===k) ? selectie.filter(x=>sleutelVan(x)!==k) : selectie.concat([it]);
+    toonSelectie();
     return;
   }
-  if(!gekozen) return;
+  if(!selectie.length) return;
   const t = e.target.closest("td.cell[data-site], td.site[data-site]");
-  if(t){
-    if(t.classList.contains("site")) plaats(gekozen.naam, gekozen.van, t.dataset.site, [...Array(N).keys()], false);
-    else plaats(gekozen.naam, gekozen.van, t.dataset.site, [+t.dataset.day], false);
-  } else if(e.target.closest("#pool") && gekozen.van) haalWeg(gekozen.naam, gekozen.van);
-  gekozen = null; document.querySelectorAll(".target,.sel").forEach(x=>x.classList.remove("target","sel"));
+  if(t) zetOp(selectie.slice(), t, false);
+  else if(e.target.closest("#pool")) haalWeg(selectie.slice());
+  else wisSelectie();
 });
 document.addEventListener("keydown", e=>{
   if((e.ctrlKey||e.metaKey) && e.key==="z" && !e.target.closest("input")){ e.preventDefault(); doUndo(); }
   if((e.ctrlKey||e.metaKey) && e.key==="s"){ e.preventDefault(); opslaan(false); }
-  if(e.key==="Escape"){ gekozen = null; document.querySelectorAll(".target,.sel").forEach(x=>x.classList.remove("target","sel")); }
+  if(e.key==="Escape") wisSelectie();
 });
 document.addEventListener("submit", e=>{
   if(e.target.id==="addSite"){ e.preventDefault(); voegWerfToe(document.getElementById("newSite").value); }
@@ -700,7 +745,7 @@ document.addEventListener("submit", e=>{
    ============================================================ */
 function wisselWeek(n){
   if(planVuil && !confirm("Je hebt niet-opgeslagen wijzigingen in deze week. Toch van week wisselen? (De wijzigingen gaan verloren.)")) return;
-  week = plusDagen(week, n*7); planVuil = false;
+  week = plusDagen(week, n*7); planVuil = false; selectie = [];
   render(); laad();
 }
 document.getElementById("prevWk").onclick = ()=> wisselWeek(-1);
@@ -725,13 +770,6 @@ document.getElementById("clearWk").onclick = ()=>{
   snap(); rijen = []; zorgVoorAfwezig(); gewijzigd(); toast("Week leeggemaakt");
 };
 
-document.querySelectorAll(".tabs button").forEach(b=> b.onclick = ()=>{
-  tab = b.dataset.tab;
-  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on", x===b));
-  document.getElementById("viewPlanning").hidden = tab!=="planning";
-  document.getElementById("viewActies").hidden = tab!=="acties";
-});
-
 /* ============================================================
    ACTIEPUNTEN
    ============================================================ */
@@ -746,7 +784,7 @@ function renderActies(){
     const dl = a.deadline ? vanYmd(a.deadline).toLocaleDateString("nl-BE",{weekday:"short",day:"numeric",month:"short"}) : "geen deadline";
     return `<div class="act-rij${laat?" laat":""}${a.status==="klaar"?" klaar":""}">
       <input type="checkbox" data-vink="${esc(a.id)}" ${a.status==="klaar"?"checked":""} aria-label="Afgewerkt">
-      <div class="act-wat">${esc(a.wat)}</div>
+      <div class="act-wat">${esc(a.wat)}${a.werf ? `<div class="act-werf">${esc(a.werf)}</div>` : ""}</div>
       <div class="act-wie">${esc(a.wie||"—")}</div>
       <div class="act-dl">${esc(dl)}${laat?" · te laat":""}</div>
       <button class="act-rm" data-actrm="${esc(a.id)}" title="Verwijderen">×</button></div>`;
@@ -755,13 +793,27 @@ function renderActies(){
   h += open.length ? open.map(rij).join("") : `<div class="act-leeg">Geen open actiepunten.</div>`;
   if(klaar.length) h += `<div class="act-sect">Afgewerkt · laatste 30 dagen</div>` + klaar.map(rij).join("");
   el.innerHTML = h;
+  vulWerfKeuze();
+}
+/* Keuzelijst werven: eerst wat deze week in het rooster staat,
+   daarna de rest. Een actiepunt hoeft niet bij een werf te horen. */
+function vulWerfKeuze(){
+  const sel = document.getElementById("actWerf");
+  const huidig = sel.value;
+  const dezeWeek = rijen.filter(r=>soortVan(r.code)!=="afwezig").map(r=>r.werf);
+  const anderen = werven.map(w=>w.naam).filter(n=>!dezeWeek.includes(n));
+  const opt = n => `<option value="${esc(n)}">${esc(n)}</option>`;
+  sel.innerHTML = `<option value="">Geen specifieke werf</option>` +
+    (dezeWeek.length ? `<optgroup label="In het rooster deze week">${dezeWeek.map(opt).join("")}</optgroup>` : "") +
+    (anderen.length ? `<optgroup label="Andere werven">${anderen.map(opt).join("")}</optgroup>` : "");
+  sel.value = [...sel.options].some(o=>o.value===huidig) ? huidig : "";
 }
 document.getElementById("actForm").addEventListener("submit", e=>{
   e.preventDefault();
   const wat = document.getElementById("actWat").value.trim(); if(!wat) return;
   snap();
   acties.push({ id: "A" + Date.now().toString(36) + Math.floor(Math.random()*1000),
-    wat, wie: document.getElementById("actWie").value.trim(),
+    wat, werf: document.getElementById("actWerf").value, wie: document.getElementById("actWie").value.trim(),
     deadline: document.getElementById("actDl").value || "",
     status: "open", aangemaakt: ymd(new Date()), afgerond: "" });
   actiesVuil = true;
