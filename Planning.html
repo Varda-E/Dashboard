@@ -106,6 +106,9 @@ tr.absent td.site .nm{color:var(--steel)}
 .chip.conflict::before{background:var(--warn);opacity:1}
 .chip.dragging{opacity:.35}
 .chip span{overflow:hidden;text-overflow:ellipsis}
+.chip-x{display:none;margin-left:auto;border:0;background:none;color:var(--muted);font-size:15px;line-height:1;padding:0 2px;cursor:pointer;flex:none}
+.chip:hover .chip-x,.chip.sel .chip-x{display:block}
+.chip-x:hover{color:var(--red)}
 tr.intern .chip::before{background:var(--brown)}
 tr.absent .chip::before{background:var(--steel)}
 .chip.vast{cursor:default;background:var(--steel-soft);color:var(--steel)}
@@ -203,7 +206,7 @@ tr.absent .chip::before{background:var(--steel)}
     <button class="btn" id="copyPrev">Kopieer vorige week</button>
     <button class="btn" id="undoBtn" disabled>Ongedaan maken</button>
     <button class="btn" id="clearWk">Week leegmaken</button>
-    <span class="hint">Sleep een naam naar een dag, of naar een werfnaam voor de hele week. Klik meerdere namen aan om ze samen te verslepen of in één keer in een vak te zetten. Ctrl/⌥ = kopiëren. Dubbelklik = verwijderen.</span>
+    <span class="hint">Sleep een naam naar een dag, of naar een werfnaam voor de hele week. Klik meerdere namen aan om ze samen te verslepen of in één keer in een vak te zetten. Ctrl/⌥ = kopiëren. Verwijderen: × op de naam, of aanklikken en Delete.</span>
   </div>
   <div class="layout">
     <div style="min-width:0">
@@ -616,7 +619,7 @@ function render(){
       r.dagen[d].forEach(n=>{
         const cf = isConflict(n,d,r);
         const waarom = cf ? (vrijaf[d][n] ? " — volgens Odoo: " + vrijaf[d][n] : " — dubbel ingepland") : "";
-        s += `<div class="chip${cf?" conflict":""}" draggable="true" tabindex="0" data-name="${esc(n)}" data-site="${esc(r.id)}" data-day="${d}" title="${esc(n+waarom)}"><span>${esc(n)}</span></div>`;
+        s += `<div class="chip${cf?" conflict":""}" draggable="true" tabindex="0" data-name="${esc(n)}" data-site="${esc(r.id)}" data-day="${d}" title="${esc(n+waarom)}"><span>${esc(n)}</span><button class="chip-x" data-chiprm tabindex="-1" title="Uit de planning halen" aria-label="${esc(n)} verwijderen">×</button></div>`;
       });
       s += `</div></td>`;
     }
@@ -788,7 +791,7 @@ function toonSelectie(){
   if(selectie.length){
     const namen = [...new Set(selectie.map(i=>i.naam))];
     document.getElementById("selTekst").textContent =
-      (namen.length===1 ? namen[0] : namen.length + " namen") + " geselecteerd — klik een vak of werfnaam, of sleep";
+      (namen.length===1 ? namen[0] : namen.length + " namen") + " geselecteerd — klik een vak of werfnaam, sleep, of druk Delete om te verwijderen";
   }
 }
 function wisSelectie(tekenen=true){ selectie = []; if(tekenen) toonSelectie(); }
@@ -834,6 +837,8 @@ document.addEventListener("dblclick", e=>{
 document.addEventListener("click", e=>{
   const rm = e.target.closest("[data-rm]");
   if(rm){ verwijderWerf(rm.dataset.rm); return; }
+  const chipRm = e.target.closest("[data-chiprm]");
+  if(chipRm){ haalWeg([itemVan(chipRm.closest(".chip"))]); return; }
   if(e.target.closest("#acties, .overlay, header, .toolbar, .toast, .selbar, form")) return;
   const c = e.target.closest(".chip:not(.vast)");
   if(c){
@@ -853,6 +858,13 @@ document.addEventListener("keydown", e=>{
   if((e.ctrlKey||e.metaKey) && e.key==="z" && !e.target.closest("input")){ e.preventDefault(); doUndo(); }
   if((e.ctrlKey||e.metaKey) && e.key==="s"){ e.preventDefault(); opslaan(false); }
   if(e.key==="Escape") wisSelectie();
+  /* Delete of Backspace: de aangeklikte namen uit het rooster halen. */
+  if((e.key==="Delete" || e.key==="Backspace") && !e.target.closest("input, select, textarea")){
+    let items = selectie.filter(it=>it.van);
+    const actief = document.activeElement && document.activeElement.closest && document.activeElement.closest("td .chip:not(.vast)");
+    if(!items.length && actief) items = [itemVan(actief)];
+    if(items.length){ e.preventDefault(); haalWeg(items); }
+  }
 });
 document.addEventListener("submit", e=>{
   if(e.target.id==="addSite"){ e.preventDefault(); voegWerfToe(document.getElementById("newSite").value); }
