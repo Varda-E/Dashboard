@@ -276,9 +276,11 @@ const DAGEN = ["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag"];
 const DAGEN_KORT = ["Ma","Di","Wo","Do","Vr","Za"];
 const N = DAGEN.length;   // aantal planbare dagen per week
 const MAANDEN = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
-const AFWEZIG = [{code:"VERLOF",werf:"Verlof"},{code:"ZIEK",werf:"Ziek"},{code:"OPLEIDING",werf:"Opleiding"}];
+/* Verlof en ziekte komen uit Odoo; enkel opleiding plan je hier zelf in. */
+const AFWEZIG = [{code:"OPLEIDING",werf:"Opleiding"}];
 const INTERN  = [{code:"MAGAZIJN",naam:"Magazijn",stad:""},{code:"KANTOOR",naam:"Kantoor",stad:""}];
-const CODES_AFWEZIG = AFWEZIG.map(a=>a.code);
+/* VERLOF en ZIEK blijven herkend voor wat vroeger zo werd opgeslagen. */
+const CODES_AFWEZIG = ["VERLOF","ZIEK","OPLEIDING"];
 const CODES_INTERN  = INTERN.map(a=>a.code);
 
 /* ============================================================
@@ -630,7 +632,7 @@ function render(){
 
   h += `<tr class="grp"><td colspan="7">Afwezig</td></tr>`;
   /* Verlof uit Odoo: vast, niet te verslepen — aanpassen gebeurt in Odoo. */
-  h += `<tr class="absent"><td class="site"><div class="nm">Verlof &amp; ziekte</div><div class="meta">uit Odoo</div></td>`;
+  h += `<tr class="absent"><td class="site"><div class="nm">Verlof &amp; ziekte</div><div class="meta">automatisch uit Odoo</div></td>`;
   for(let d=0; d<N; d++){
     h += `<td class="cell${feestKlas(d)}"><div class="chips">` +
       Object.keys(vrijaf[d]).sort((a,b)=>a.localeCompare(b)).map(n=>`<div class="chip vast" title="${esc(n+" — "+vrijaf[d][n])}"><span>${esc(n)}</span></div>`).join("") +
